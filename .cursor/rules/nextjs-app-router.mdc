@@ -1,0 +1,13 @@
+---
+description: Cursor rules for Next.js App Router with TypeScript and Tailwind.
+globs: "**/*.{ts,tsx,js,jsx,css}"
+alwaysApply: false
+---
+
+# Next.js App Router
+
+- Use server components by default; client components only when state, effects, or browser APIs are required.
+- Use file-based routing, `layout.tsx` for shared chrome, `loading.tsx` / `error.tsx` where useful.
+- Use TypeScript, Tailwind CSS, and Next.js naming conventions.
+- Keep components reusable; prefer existing project patterns over new abstractions.
+- Do not invent 3D engines, blockchain, or background AI loops in Stage 1 of NEXUS.
