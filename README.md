@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NEXUS
 
-## Getting Started
+**One mind. 128 cells.** A shared digital character. Honeycomb cortex. Public memory.
 
-First, run the development server:
+This is Stage 1: the site, the 3D honeycomb brain, local claim, mock replies. No database, wallet, or live model yet.
+
+## Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `/` — mind, nodes, archive
+- `/memory` — public traces
+- `/docs` — what it is, glossary, how to try it, FAQ
+- `/about` — short constitution
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Product loop
 
-## Learn More
+1. **Watch** — drag the honeycomb. No account needed.
+2. **Claim** — pick a free cell. Stored in this browser for now.
+3. **Send** — a short public scenario. The reply stays in the archive.
 
-To learn more about Next.js, take a look at the following resources:
+## Lore
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`CONSTITUTION.md` is the character. `LORE.md` is the short public version. `DISCLAIMER.md` is the honesty text. Scenarios colour the next thought. They do not erase the rest, and they do not override the constitution.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Layout
 
-## Deploy on Vercel
+```
+CONSTITUTION.md   character bible
+LORE.md           public myth
+DISCLAIMER.md     honesty text
+src/app/docs      plain-language documentation
+src/components    site UI
+src/lib/brain-hex honeycomb geometry
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+NEXUS is collaborative fiction. It does not think, feel, or contain real neurons.
