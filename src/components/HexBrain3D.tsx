@@ -99,10 +99,12 @@ export function HexBrain3D({
   }, [visualTick, selectedId, nodes]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d", { alpha: false });
-    if (!ctx) return;
+    const canvasEl = canvasRef.current;
+    if (!canvasEl) return;
+    const ctxEl = canvasEl.getContext("2d", { alpha: false });
+    if (!ctxEl) return;
+    const canvas: HTMLCanvasElement = canvasEl;
+    const ctx: CanvasRenderingContext2D = ctxEl;
 
     reducedRef.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
