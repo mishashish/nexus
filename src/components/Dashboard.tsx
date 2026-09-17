@@ -2,6 +2,7 @@
 
 import { ActiveNodeCard } from "./ActiveNodeCard";
 import { CharacterCard } from "./CharacterCard";
+import { ContractsBar } from "./ContractsBar";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
 import { HowItWorks } from "./HowItWorks";
@@ -16,6 +17,7 @@ export function Dashboard() {
   return (
     <div className="mx-auto min-h-screen max-w-[1440px] px-4 py-4 sm:px-6">
       <Header />
+      <ContractsBar />
       <section
         id="mind"
         className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(280px,380px)_minmax(0,1fr)]"

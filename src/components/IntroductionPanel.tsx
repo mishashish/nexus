@@ -1,25 +1,20 @@
 "use client";
 
-import { Hexagon, Lock, Sparkles } from "lucide-react";
-import { BloomChips } from "./illustrations";
 import { Panel } from "./ui";
+import { RastrType } from "./RastrType";
 import { useNexus } from "@/lib/nexus-store";
+import { BRAND } from "@/lib/character";
 
 export function IntroductionPanel() {
-  const { stats, yours } = useNexus();
+  const { yours, stats } = useNexus();
 
   return (
-    <Panel className="flex h-full flex-col justify-center p-6 sm:p-8">
-      <BloomChips />
-      <p className="kicker mt-5">intelligence in bloom</p>
-      <h1 className="hero-title max-w-[12ch] text-[2.35rem] leading-[1.05] font-extrabold tracking-[-0.04em] sm:text-[2.7rem]">
-        One mind.
-        <br />
-        In bloom.
-      </h1>
+    <Panel className="rastr-panel flex h-full flex-col justify-center p-5 sm:p-7">
+      <p className="kicker">{BRAND.tagline}</p>
+      <RastrType text="CELLS" height={88} density={11} className="mt-1 max-w-full" />
       <p className="lede mt-5">
-        A shared character grown from 128 lots. Click a living cell, lock the
-        pulse, then speak from that seat.
+        A shared character built as a <b>brain structure</b> — {stats.total}{" "}
+        addressable cells. Buy a contract, claim your seat, speak from the map.
       </p>
       <div className="flex flex-wrap gap-3">
         {yours ? (
@@ -28,32 +23,18 @@ export function IntroductionPanel() {
           </a>
         ) : (
           <>
-            <a href="#network-panel" className="btn-primary">
-              Enter node →
+            <a href="#contracts" className="btn-primary">
+              View contracts
             </a>
-            <a href="/me" className="btn-ghost px-2 py-2">
-              Cabinet
+            <a href="#network-panel" className="btn-ghost px-2 py-2">
+              Structure
             </a>
           </>
         )}
       </div>
-      <div className="stat-row">
-        <div className="stat-block">
-          <Hexagon size={16} strokeWidth={1.5} />
-          <strong>{stats.total}</strong>
-          <span>nodes</span>
-        </div>
-        <div className="stat-block">
-          <Lock size={16} strokeWidth={1.5} />
-          <strong>{stats.claimed}</strong>
-          <span>claimed</span>
-        </div>
-        <div className="stat-block">
-          <Sparkles size={16} strokeWidth={1.5} />
-          <strong>{stats.memory}</strong>
-          <span>traces</span>
-        </div>
-      </div>
+      <p className="mt-8 font-mono text-[11px] tracking-[0.12em] text-nexus-mute">
+        {stats.claimed} CLAIMED / {stats.memory} TRACES / RSTR.01
+      </p>
     </Panel>
   );
 }

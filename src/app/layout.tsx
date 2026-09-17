@@ -1,33 +1,33 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Nunito } from "next/font/google";
+import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import { NexusProvider } from "@/lib/nexus-store";
 import { Ticket } from "@/components/Ticket";
 import { ClaimLock } from "@/components/ClaimLock";
 import "./globals.css";
 
-const nunito = Nunito({
+const display = Space_Grotesk({
   variable: "--font-display",
-  subsets: ["latin", "cyrillic"],
-  weight: ["500", "600", "700", "800", "900"],
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
 const plex = IBM_Plex_Mono({
   variable: "--font-plex",
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
-  title: "NEXUS — one mind in bloom",
+  title: "CELLS — structure of a shared mind",
   description:
-    "NEXUS is a single shared digital character. 128 people hold its nodes. Claim one, send a scenario, watch the mind bloom.",
+    "CELLS is one shared digital character mapped as 128 brain cells. Claim a seat, buy a contract, speak from the structure.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${nunito.variable} ${plex.variable} h-full`}
+      className={`${display.variable} ${plex.variable} h-full`}
       suppressHydrationWarning
     >
       <body className="min-h-full" suppressHydrationWarning>

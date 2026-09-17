@@ -58,11 +58,7 @@ function rgbFor(
   return `rgb(${c.map((n) => Math.round(n * shade)).join(",")})`;
 }
 
-export function HexBrain3D({
-  onLotHover,
-}: {
-  onLotHover?: (lot: { index: number; left: number; top: number } | null) => void;
-}) {
+export function HexBrain3D() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { nodes, selectedId, selectNode, startClaim, visualTick, yoursId, claimingId } = useNexus();
   const nodesRef = useRef(nodes);
@@ -76,8 +72,6 @@ export function HexBrain3D({
   const reducedRef = useRef(false);
   const lookRef = useRef<number | null>(null);
   const prevSel = useRef(selectedId);
-  const hoverCb = useRef(onLotHover);
-  hoverCb.current = onLotHover;
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -274,9 +268,8 @@ export function HexBrain3D({
         H * 0.46,
         Math.min(W, H) * 0.58,
       );
-      glow.addColorStop(0, "rgba(236,63,39,0.22)");
-      glow.addColorStop(0.32, "rgba(251,103,197,0.12)");
-      glow.addColorStop(0.62, "rgba(61,86,218,0.07)");
+      glow.addColorStop(0, "rgba(236,63,39,0.1)");
+      glow.addColorStop(0.4, "rgba(251,103,197,0.05)");
       glow.addColorStop(1, "rgba(8,6,1,0)");
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, W, H);
@@ -306,10 +299,7 @@ export function HexBrain3D({
         const isYours = node?.id === yours;
         const isClaiming = node?.id === claiming;
         let L = lit(cell.nx, cell.ny, cell.nz) * cell.tone;
-        if (node?.status === "available" && !reducedRef.current) {
-          L *= 0.88 + 0.22 * (0.5 + 0.5 * Math.sin(ts / 380 + (node.index ?? 0)));
-        }
-        const size = cell.size * (isSelected || isClaiming ? 1.18 : 1);
+        const size = cell.size * (isSelected || isClaiming ? 1.12 : 1);
         const fill = rgbFor(
           node,
           L,
@@ -485,15 +475,6 @@ export function HexBrain3D({
       const [lx, ly] = local(e);
       const best = hit(lx, ly);
       hoverRef.current = best >= 0 ? best : null;
-      if (best >= 0 && screen[best]) {
-        hoverCb.current?.({
-          index: best,
-          left: (screen[best].x / W) * 100,
-          top: (screen[best].y / H) * 100,
-        });
-      } else {
-        hoverCb.current?.(null);
-      }
       if (!dragging) canvas.style.cursor = best >= 0 ? "pointer" : "grab";
     };
     const onUp = () => {
@@ -564,8 +545,8 @@ export function HexBrain3D({
         className="pixel h-full w-full touch-none cursor-grab outline-none"
       />
       <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-between font-mono text-[10px] text-nexus-mute">
-        <span>drag · chunky cells bloom</span>
-        <span>click a free cell to lock it</span>
+        <span>drag to rotate</span>
+        <span>click a free cell</span>
       </div>
     </div>
   );

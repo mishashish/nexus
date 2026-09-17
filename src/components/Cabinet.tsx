@@ -1,14 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
+import { CellViewer } from "./CellViewer";
 import { PageShell } from "./PageShell";
-import { Sigil } from "./Sigil";
 import { BRAIN } from "@/lib/brain-hex";
 import { REGION_MYTH, shortKey } from "@/lib/chamber";
-import { playMiss, playTap } from "@/lib/linen-sound";
+import { CHAIN_LABEL, LOT_CONTRACT } from "@/lib/contracts";
+import { playTap } from "@/lib/linen-sound";
 import { lotPrice, lotTag } from "@/lib/lots";
 import { useNexus } from "@/lib/nexus-store";
+
+const REGIONS = [
+  "all",
+  "frontal",
+  "parietal",
+  "temporal",
+  "occipital",
+  "cingulate",
+  "insula",
+  "hippocampus",
+  "cerebellum",
+] as const;
 
 export function Cabinet() {
   const {
@@ -24,21 +37,26 @@ export function Cabinet() {
     startClaim,
     sendScenario,
     busy,
-    sigil,
-    toggleSigil,
+    wallet,
+    connectWallet,
+    disconnectWallet,
+    activated,
+    activateCell,
     stir,
     stirred,
   } = useNexus();
   const [draft, setDraft] = useState("");
   const [name, setName] = useState(alias);
-  const [stirHot, setStirHot] = useState(false);
+  const [regionFilter, setRegionFilter] = useState<(typeof REGIONS)[number]>("all");
+  const [pulseNote, setPulseNote] = useState("");
+
   const myth = REGION_MYTH[yours?.region ?? ""] ?? REGION_MYTH.frontal;
   const traces = useMemo(
     () => memories.filter((m) => m.mine || (yours && m.nodeId === yours.id)),
     [memories, yours],
   );
   const free = useMemo(
-    () => nodes.filter((n) => n.status === "available").slice(0, 40),
+    () => nodes.filter((n) => n.status === "available").slice(0, 32),
     [nodes],
   );
   const neighbors = useMemo(() => {
@@ -46,15 +64,24 @@ export function Cabinet() {
     const ids = BRAIN.neighbors[yours.index] ?? [];
     return Array.from({ length: 6 }, (_, i) => nodes[ids[i]] ?? null);
   }, [nodes, yours]);
-  const resonance = Math.min(5, traces.length + Math.floor(stirred / 3));
 
-  useEffect(() => {
-    if (!yours) return;
-    const id = window.setInterval(() => {
-      setStirHot((on) => !on);
-    }, 640);
-    return () => window.clearInterval(id);
-  }, [yours]);
+  const inventory = useMemo(() => {
+    const owned = yours ? [yours] : [];
+    const near = neighbors.filter(Boolean) as typeof nodes;
+    const pool = [...owned, ...near.filter((n) => n.id !== yours?.id)];
+    if (regionFilter === "all") return pool;
+    return pool.filter((n) => n.region === regionFilter);
+  }, [neighbors, regionFilter, yours]);
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected =
+    inventory.find((n) => n.id === selectedId) ||
+    inventory[0] ||
+    yours ||
+    null;
+  const selectedMyth =
+    REGION_MYTH[selected?.region ?? ""] ?? REGION_MYTH.frontal;
+  const isOwned = selected?.id === yours?.id;
 
   async function onSend(e: FormEvent) {
     e.preventDefault();
@@ -62,85 +89,82 @@ export function Cabinet() {
     if (ok) setDraft("");
   }
 
-  function onStir() {
-    if (!stirHot) {
-      playMiss();
-      return;
-    }
+  function onPulse() {
     playTap();
     stir();
+    setPulseNote("Pulse sent across neighboring cells.");
+    window.setTimeout(() => setPulseNote(""), 1800);
+  }
+
+  function onActivate() {
+    playTap();
+    activateCell();
+    setPulseNote("Cell activated in this browser.");
+    window.setTimeout(() => setPulseNote(""), 1800);
   }
 
   return (
     <PageShell>
-      <div className="cab-hero">
+      <div className="cab-glow" aria-hidden />
+
+      <div className="cab-hero cab-hero-single">
         <div>
-          <p className="kicker">{entered ? "chamber" : "doorway"}</p>
+          <p className="kicker">personal ledger</p>
           <h1 className="section-title">
-            {entered
-              ? yours
-                ? myth.title
-                : "empty chair"
-              : "press the plate"}
+            {!entered ? "Cabinet" : "Your cells"}
           </h1>
           <p className="lede">
-            {entered
-              ? yours
-                ? `${alias || "unnamed"} sits in ${lotTag(yours.index ?? 0)}. Neighbors hear the stir.`
-                : "Grey cells on the plate below still breathe. Click one and lock the pulse."
-              : "One press stamps a key on this browser. Then you lock a cell in the honeycomb."}
+            {!entered
+              ? "Open the ledger to see owned cells, neighbors, and the living viewer — like a Void cabinet for the brain map."
+              : wallet
+                ? `${wallet} · ${alias || "unnamed"}`
+                : "Wallet optional. Local key keeps your seat."}
           </p>
-          {entered && keyId ? (
-            <p className="cab-meta">{shortKey(keyId)}</p>
-          ) : null}
           <div className="mt-5 flex flex-wrap gap-3">
             {!entered ? (
-              <button type="button" className="stamp-btn" onClick={enterBrowser}>
-                Press
+              <button type="button" className="btn-primary" onClick={enterBrowser}>
+                Unlock cabinet
               </button>
-            ) : yours ? (
+            ) : (
               <>
-                <Link href="/memory" className="btn-ghost">
-                  Public archive
+                {wallet ? (
+                  <button type="button" className="btn-ghost" onClick={disconnectWallet}>
+                    {wallet}
+                  </button>
+                ) : (
+                  <button type="button" className="btn-primary" onClick={connectWallet}>
+                    Connect wallet
+                  </button>
+                )}
+                <Link href="/#contracts" className="btn-ghost">
+                  Contracts
                 </Link>
                 <button type="button" className="btn-ghost" onClick={leaveBrowser}>
                   Leave
                 </button>
               </>
-            ) : (
-              <button type="button" className="btn-ghost" onClick={leaveBrowser}>
-                Leave
-              </button>
             )}
           </div>
-        </div>
-        <div className="sigil-card">
-          <Sigil
-            seed={keyId ?? "unsigned"}
-            bits={entered ? sigil : undefined}
-            onToggle={entered ? toggleSigil : undefined}
-          />
-          <p className="sigil-cap">
-            {entered ? "click pixels · this is yours" : "unsigned"}
-          </p>
-          <p className="mind-badge">
-            {yours ? `seat · ${lotTag(yours.index ?? 0)}` : "seat · empty"}
-          </p>
+          {entered && keyId ? (
+            <p className="cab-meta mt-4">local key · {shortKey(keyId)}</p>
+          ) : null}
         </div>
       </div>
 
       {!entered ? (
-        <section className="stamp-well">
+        <section className="cab-locked">
           <p className="lede mb-0">
-            The plate keeps the key. Nothing leaves this window.
+            Access locked. Enter to open your personal ledger of cells.
           </p>
         </section>
       ) : null}
 
       {entered && !yours ? (
         <section className="mt-10">
-          <h2 className="section-title">Pick a breathing cell</h2>
-          <p className="sub">Click — then hit the pulse three times, or hold.</p>
+          <h2 className="section-title">No cell yet</h2>
+          <p className="sub">
+            Claim from <a href="/#contracts">contracts</a> or pick a free square.
+          </p>
           <div className="grid grid-cols-8 gap-1 sm:grid-cols-[repeat(16,minmax(0,1fr))]">
             {free.map((node) => (
               <button
@@ -156,99 +180,193 @@ export function Cabinet() {
       ) : null}
 
       {entered && yours ? (
-        <section className="mt-10 grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="chamber-side">
-            <p className="kicker">radar</p>
-            <div className="radar">
-              {neighbors.map((n, i) => (
-                <i
-                  key={n?.id ?? `empty-${i}`}
-                  className={`radar-n radar-n-${i}${n?.status === "active" ? " is-live" : ""}`}
-                  title={n ? lotTag(n.index ?? 0) : "empty"}
-                />
-              ))}
-              <i className="radar-you" />
+        <>
+          <div className="cab-stats">
+            <div>
+              <span>owned</span>
+              <strong>1</strong>
             </div>
-            <p className="sub mt-4 mb-2">Resonance {resonance}/5</p>
-            <div className="res-track">
-              <span style={{ width: `${(resonance / 5) * 100}%` }} />
+            <div>
+              <span>neighbors</span>
+              <strong>{neighbors.filter(Boolean).length}</strong>
             </div>
-            <p className="kicker mt-8">stir</p>
-            <button
-              type="button"
-            className={`stir-pad${stirHot ? " is-hot" : ""}`}
-            onClick={onStir}
-            >
-              {stirHot ? "now" : "wait"}
-            </button>
-            <p className="claim-hint">Tap when it says NOW. The honeycomb on the home page jumps.</p>
+            <div>
+              <span>pulses</span>
+              <strong>{stirred}</strong>
+            </div>
+            <div>
+              <span>status</span>
+              <strong>{activated ? "activated" : "held"}</strong>
+            </div>
           </div>
-          <div>
-            <h2 className="section-title">Speak from here</h2>
-            <p className="sub">{myth.line}</p>
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setAlias(name);
-              }}
-            >
-              <label className="block text-sm text-nexus-mute">
-                Standing name
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={24}
-                  placeholder="shore-walker"
-                  className="mt-2 h-10 w-full border border-nexus-line bg-transparent px-3 text-nexus-text outline-none focus:border-nexus-violet"
-                />
-              </label>
-              <button type="submit" className="btn-ghost">
-                Keep name
+
+          <div className="region-filters">
+            {REGIONS.map((r) => (
+              <button
+                key={r}
+                type="button"
+                className={regionFilter === r ? "is-on" : undefined}
+                onClick={() => setRegionFilter(r)}
+              >
+                {r}
               </button>
-            </form>
-            <form className="mt-8 space-y-3" onSubmit={onSend}>
-              <label className="block text-sm text-nexus-mute">
-                Scenario
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  maxLength={280}
-                  placeholder="You wake up in a city where nobody remembers your name. What do you do first?"
-                  className="mt-2 min-h-[120px] w-full border border-nexus-line bg-transparent p-3 text-[15px] text-nexus-text outline-none focus:border-nexus-violet"
-                />
-              </label>
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] text-nexus-mute">
-                  {draft.length} / 280
-                </span>
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={busy || !draft.trim()}
-                >
-                  Send
+            ))}
+          </div>
+
+          <section className="cab-split">
+            <div className="cab-list">
+              <p className="kicker">inventory</p>
+              <ul>
+                {inventory.map((n) => {
+                  const m = REGION_MYTH[n.region ?? ""] ?? REGION_MYTH.frontal;
+                  const mine = n.id === yours.id;
+                  return (
+                    <li key={n.id}>
+                      <button
+                        type="button"
+                        className={`cab-lot${selected?.id === n.id ? " is-active" : ""}`}
+                        onClick={() => setSelectedId(n.id)}
+                      >
+                        <span className="cab-lot-tag">{lotTag(n.index ?? 0)}</span>
+                        <span className="cab-lot-title">
+                          {m.title}
+                          {mine ? " · yours" : ""}
+                          {mine && activated ? " · fed" : ""}
+                        </span>
+                        <span className="cab-lot-meta">
+                          {n.region} · {lotPrice(n.index ?? 0)} NX
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            <div className="cab-detail">
+              {selected ? (
+                <>
+                  <CellViewer
+                    node={selected}
+                    neighbors={isOwned ? neighbors : []}
+                    activated={isOwned && activated}
+                  />
+                  <div className="cab-detail-body">
+                    <p className="kicker">{isOwned ? "owned cell" : "neighbor"}</p>
+                    <h2 className="section-title mb-2">{selectedMyth.title}</h2>
+                    <p className="lede">{selectedMyth.body}</p>
+                    <dl className="neuron-meta">
+                      <div>
+                        <dt>Seat</dt>
+                        <dd>{lotTag(selected.index ?? 0)}</dd>
+                      </div>
+                      <div>
+                        <dt>Region</dt>
+                        <dd>{selected.region}</dd>
+                      </div>
+                      <div>
+                        <dt>Contract</dt>
+                        <dd>{LOT_CONTRACT}</dd>
+                      </div>
+                      <div>
+                        <dt>Chain</dt>
+                        <dd>{CHAIN_LABEL}</dd>
+                      </div>
+                    </dl>
+                    {isOwned ? (
+                      <div className="cab-actions">
+                        {!activated ? (
+                          <button type="button" className="btn-primary" onClick={onActivate}>
+                            Activate cell
+                          </button>
+                        ) : (
+                          <button type="button" className="btn-primary" onClick={onPulse}>
+                            Pulse neighbors
+                          </button>
+                        )}
+                        <Link href="/#network-panel" className="btn-ghost">
+                          Open structure →
+                        </Link>
+                      </div>
+                    ) : null}
+                    {pulseNote ? <p className="cab-note">{pulseNote}</p> : null}
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="neuron-panel mt-10">
+            <div className="neuron-main">
+              <p className="kicker">speak</p>
+              <h2 className="section-title mb-2">{myth.title}</h2>
+              <p className="sub">{myth.line}</p>
+              <form
+                className="space-y-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setAlias(name);
+                }}
+              >
+                <label className="block text-sm text-nexus-mute">
+                  Standing name
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={24}
+                    placeholder="shore-walker"
+                    className="mt-2 h-10 w-full border border-nexus-line bg-transparent px-3 text-nexus-text outline-none focus:border-nexus-violet"
+                  />
+                </label>
+                <button type="submit" className="btn-ghost">
+                  Save
                 </button>
-              </div>
-            </form>
-          </div>
-          <div>
-            <h2 className="section-title">Traces</h2>
-            <p className="sub">Punched cards from this seat.</p>
-            <ul className="space-y-3">
-              {traces.length === 0 ? (
-                <li className="text-sm text-nexus-mute">Nothing punched yet.</li>
-              ) : (
-                traces.map((entry) => (
-                  <li key={entry.id} className="trace-card">
-                    <p className="text-sm text-nexus-mute">{entry.scenario}</p>
-                    <p className="mt-1 text-[15px] leading-6">{entry.reply}</p>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-        </section>
+              </form>
+              <form className="mt-8 space-y-3" onSubmit={onSend}>
+                <label className="block text-sm text-nexus-mute">
+                  Scenario from this cell
+                  <textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    maxLength={280}
+                    placeholder="Speak from your seat…"
+                    className="mt-2 min-h-[120px] w-full border border-nexus-line bg-transparent p-3 text-[15px] text-nexus-text outline-none focus:border-nexus-violet"
+                  />
+                </label>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-nexus-mute">
+                    {draft.length} / 280
+                  </span>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={busy || !draft.trim()}
+                  >
+                    Send
+                  </button>
+                </div>
+              </form>
+            </div>
+            <div className="neuron-side">
+              <h2 className="section-title">Traces</h2>
+              <ul className="mt-4 space-y-3">
+                {traces.length === 0 ? (
+                  <li className="text-sm text-nexus-mute">Nothing yet.</li>
+                ) : (
+                  traces.map((entry) => (
+                    <li key={entry.id} className="trace-card">
+                      <p className="text-sm text-nexus-mute">{entry.scenario}</p>
+                      <p className="mt-1 text-[15px] leading-6">{entry.reply}</p>
+                    </li>
+                  ))
+                )}
+              </ul>
+              <Link href="/memory" className="btn-ghost mt-6 inline-flex">
+                Public archive →
+              </Link>
+            </div>
+          </section>
+        </>
       ) : null}
     </PageShell>
   );

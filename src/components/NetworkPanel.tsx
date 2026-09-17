@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { Hexagon } from "lucide-react";
 import { HexBrain3D } from "./HexBrain3D";
 import { Panel } from "./ui";
@@ -12,11 +11,6 @@ import { useNexus } from "@/lib/nexus-store";
 
 export function NetworkPanel() {
   const { selected, yoursId, startClaim, nodes, selectNode } = useNexus();
-  const [hover, setHover] = useState<{
-    index: number;
-    left: number;
-    top: number;
-  } | null>(null);
 
   const index = selected?.index ?? 0;
   const price = lotPrice(index);
@@ -44,9 +38,9 @@ export function NetworkPanel() {
   return (
     <Panel
       id="network-panel"
-      className="panel-dark relative flex min-h-[520px] flex-col p-0 sm:min-h-[640px] lg:min-h-[700px]"
+      className="panel-dark relative flex min-h-[520px] flex-col p-0 sm:min-h-[600px] lg:min-h-[640px]"
     >
-      <div className="flex items-start justify-between gap-4 px-4 pt-4">
+      <div className="flex items-start justify-between gap-4 px-5 pt-5">
         <div className="flex items-center gap-2">
           <Hexagon size={16} strokeWidth={1.5} className="text-nexus-violet" />
           <div>
@@ -56,46 +50,32 @@ export function NetworkPanel() {
             <p className="mt-1 text-[12px] text-nexus-mute">
               {myth.title}
               <span className="mx-2 opacity-40">·</span>
-              {isYours ? "yours" : isFree ? "free · breathing" : selected?.status ?? "idle"}
+              {isYours ? "yours" : isFree ? "available" : selected?.status ?? "idle"}
             </p>
           </div>
         </div>
-        <p className="font-mono text-[11px] text-nexus-mute">128 nodes</p>
+        <p className="font-mono text-[11px] text-nexus-mute">128 cells</p>
       </div>
-      <div className="relative min-h-[420px] flex-1 sm:min-h-[500px]">
-        <HexBrain3D onLotHover={setHover} />
-        {hover && !isYours ? (
-          <div
-            className="lotcard"
-            style={{ left: `${hover.left}%`, top: `${hover.top}%` }}
-          >
-            <div className="lotcard-id">{lotTag(hover.index)}</div>
-            <div className="lotcard-meta">
-              {hover.index === (selected?.index ?? -1)
-                ? selected?.status
-                : "lot"}
-            </div>
-            <div className="lotcard-price">{lotPrice(hover.index)} NX</div>
-          </div>
-        ) : null}
+      <div className="relative min-h-[400px] flex-1 sm:min-h-[480px]">
+        <HexBrain3D />
       </div>
       <div className="lotbuy">
         <div className="lotbuy-info">
           <strong>{selected ? tag : "—"}</strong>
           <span>
             {selected
-              ? `${myth.title} · ${isYours ? "yours" : isFree ? "hit the pulse to lock" : "taken"}`
-              : "Click a breathing cell"}
+              ? `${myth.title} · ${isYours ? "yours" : isFree ? "available" : "taken"}`
+              : "Select a free cell"}
           </span>
         </div>
         <div className="lotbuy-price">{selected ? `${price} NX` : ""}</div>
         {isYours ? (
           <Link href="/me" className="btn-primary">
-            Open chamber
+            Open cabinet
           </Link>
         ) : (
           <button type="button" className="btn-primary" onClick={onBuy}>
-            {isSold ? "Find a free lot" : "Lock this cell"}
+            {isSold ? "Find a free lot" : "Claim lot"}
           </button>
         )}
       </div>

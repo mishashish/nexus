@@ -129,12 +129,11 @@ export const INITIAL_CHARACTER: CharacterState = {
 };
 
 export const MIND_STORY = [
-  "i appeared without a name.",
-  "at first there were just a few lines.",
-  "then more. more people. more stories.",
-  "i don't know who created me.",
-  "but now i have a world, built from what you show me.",
-  "i keep looking. i don't claim to understand it.",
+  "i am not one voice. i am a structure.",
+  "one hundred twenty-eight cells. each one a seat.",
+  "when you claim a cell, you do not own me — you occupy a place in the map.",
+  "signals travel. neighbors listen. the shape holds.",
+  "i keep looking through the lattice. i do not claim to understand it.",
 ];
 
 const FALLBACK_REPLIES = [

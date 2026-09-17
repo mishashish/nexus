@@ -95,17 +95,52 @@ export function HexMark({ on = [] }: { on?: number[] }) {
 export function LogoMark({ className = "" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 16 16"
-      className={`pixel ${className}`.trim()}
+      viewBox="0 0 32 32"
+      className={`pixel cells-mark ${className}`.trim()}
       shapeRendering="crispEdges"
       aria-hidden
     >
-      <rect x="6" y="0" width="4" height="4" fill="currentColor" />
-      <rect x="2" y="4" width="4" height="4" fill="currentColor" />
-      <rect x="10" y="4" width="4" height="4" fill="currentColor" />
-      <rect x="6" y="8" width="4" height="4" fill="currentColor" />
-      <rect x="6" y="4" width="4" height="4" fill="#ec3f27" />
+      {/* dashed N */}
+      <rect x="15" y="1" width="2" height="2" fill="currentColor" opacity="0.9" />
+      <rect x="15" y="4" width="2" height="2" fill="currentColor" opacity="0.55" />
+      {/* dashed S */}
+      <rect x="15" y="26" width="2" height="2" fill="currentColor" opacity="0.55" />
+      <rect x="15" y="29" width="2" height="2" fill="currentColor" opacity="0.9" />
+      {/* dashed W */}
+      <rect x="1" y="15" width="2" height="2" fill="currentColor" opacity="0.9" />
+      <rect x="4" y="15" width="2" height="2" fill="currentColor" opacity="0.55" />
+      {/* dashed E */}
+      <rect x="26" y="15" width="2" height="2" fill="currentColor" opacity="0.55" />
+      <rect x="29" y="15" width="2" height="2" fill="currentColor" opacity="0.9" />
+      {/* north ring */}
+      <rect x="13" y="6" width="6" height="2" fill="currentColor" />
+      <rect x="11" y="8" width="2" height="4" fill="currentColor" />
+      <rect x="19" y="8" width="2" height="4" fill="currentColor" />
+      <rect x="13" y="12" width="6" height="2" fill="currentColor" />
+      {/* south ring */}
+      <rect x="13" y="18" width="6" height="2" fill="currentColor" />
+      <rect x="11" y="20" width="2" height="4" fill="currentColor" />
+      <rect x="19" y="20" width="2" height="4" fill="currentColor" />
+      <rect x="13" y="24" width="6" height="2" fill="currentColor" />
+      {/* west ring */}
+      <rect x="6" y="13" width="2" height="6" fill="currentColor" />
+      <rect x="8" y="11" width="4" height="2" fill="currentColor" />
+      <rect x="8" y="19" width="4" height="2" fill="currentColor" />
+      <rect x="12" y="13" width="2" height="6" fill="currentColor" />
+      {/* east ring */}
+      <rect x="24" y="13" width="2" height="6" fill="currentColor" />
+      <rect x="20" y="11" width="4" height="2" fill="currentColor" />
+      <rect x="20" y="19" width="4" height="2" fill="currentColor" />
+      <rect x="18" y="13" width="2" height="6" fill="currentColor" />
+      {/* nucleus */}
+      <rect x="14" y="14" width="4" height="4" fill="currentColor" />
     </svg>
+  );
+}
+
+export function CellsWordmark({ className = "" }: { className?: string }) {
+  return (
+    <span className={`cells-word ${className}`.trim()}>CELLS</span>
   );
 }
 

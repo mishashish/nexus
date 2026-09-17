@@ -11,21 +11,26 @@ export function Ticket() {
 
   return (
     <div className="ticket-scrim" role="dialog" aria-labelledby="ticket-title">
-      <div className="ticket-shock" aria-hidden />
-      <button type="button" className="ticket" onClick={clearReceipt}>
-        <span className="ticket-perf" aria-hidden />
-        <span className="kicker">seat locked</span>
-        <span id="ticket-title" className="ticket-title">
+      <div className="ticket">
+        <p className="kicker">{receipt.paid ? "purchase recorded" : "seat locked"}</p>
+        <p id="ticket-title" className="ticket-title">
           {receipt.tag}
-        </span>
-        <span className="ticket-myth">{myth.title}</span>
-        <span className="ticket-line">{myth.line}</span>
-        <span className="ticket-price">{receipt.price} NX · paper only</span>
-        <span className="ticket-stamp">kept</span>
-      </button>
-      <Link href="/me" className="ticket-go" onClick={clearReceipt}>
-        Open the chamber →
-      </Link>
+        </p>
+        <p className="ticket-myth">{myth.title}</p>
+        <p className="ticket-line">{myth.line}</p>
+        <p className="ticket-price">
+          {receipt.price} NX
+          {receipt.tx ? ` · ${receipt.tx}` : " · local only"}
+        </p>
+        <div className="claim-actions" style={{ marginTop: 20 }}>
+          <Link href="/me" className="btn-primary" onClick={clearReceipt}>
+            Open cabinet
+          </Link>
+          <button type="button" className="btn-ghost" onClick={clearReceipt}>
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

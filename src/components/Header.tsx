@@ -4,13 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { LogoMark, SkyToggle } from "./illustrations";
-import { GreenDot } from "./ui";
 import { useNexus } from "@/lib/nexus-store";
 
 const LINKS = [
-  { href: "/#mind", label: "Nodes" },
+  { href: "/#contracts", label: "Contracts" },
+  { href: "/#mind", label: "Structure" },
   { href: "/memory", label: "Memory" },
-  { href: "/#about", label: "About" },
   { href: "/me", label: "Cabinet" },
   { href: "/docs", label: "Docs" },
 ];
@@ -19,7 +18,7 @@ let logoTaps = 0;
 
 export function Header() {
   const pathname = usePathname();
-  const { yours, stats } = useNexus();
+  const { yours } = useNexus();
   const [open, setOpen] = useState(false);
 
   function setLight(on: boolean) {
@@ -47,8 +46,8 @@ export function Header() {
           className="flex items-center gap-2.5 text-nexus-text"
           onClick={onLogo}
         >
-          <LogoMark className="h-7 w-7 text-nexus-text" />
-          <span className="font-sans text-[15px] tracking-[0.28em]">NEXUS</span>
+          <LogoMark className="h-8 w-8 text-nexus-text" />
+          <span className="cells-word text-[13px] text-nexus-text">CELLS</span>
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex" aria-label="Main">
@@ -57,6 +56,7 @@ export function Header() {
               (link.href === "/docs" && pathname.startsWith("/docs")) ||
               (link.href === "/memory" && pathname.startsWith("/memory")) ||
               (link.href === "/me" && pathname.startsWith("/me")) ||
+              (link.href === "/#contracts" && pathname === "/") ||
               (link.href === "/#mind" && pathname === "/");
             return (
               <Link
@@ -75,13 +75,9 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <p className="hidden items-center gap-2 font-mono text-[11px] text-nexus-mute lg:flex">
-            <GreenDot />
-            {stats.total} online
-          </p>
           <SkyToggle />
-          <Link href={yours ? "/me" : "/#network-panel"} className="btn-primary hidden sm:inline-flex">
-            {yours ? "Cabinet" : "Enter node"}
+          <Link href={yours ? "/me" : "/#contracts"} className="btn-primary hidden sm:inline-flex">
+            {yours ? "Cabinet" : "Contracts"}
           </Link>
           <button
             type="button"
@@ -110,11 +106,11 @@ export function Header() {
               </Link>
             ))}
             <Link
-              href={yours ? "/me" : "/#network-panel"}
+              href={yours ? "/me" : "/#contracts"}
               className="btn-primary mt-2"
               onClick={() => setOpen(false)}
             >
-              {yours ? "Cabinet" : "Enter node"}
+              {yours ? "Cabinet" : "Contracts"}
             </Link>
           </div>
         </div>

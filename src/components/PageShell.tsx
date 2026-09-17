@@ -18,7 +18,7 @@ export function PageShell({
       }`}
     >
       <Header />
-      <main className="mt-2">{children}</main>
+      <main className="relative z-10 mt-2">{children}</main>
       <Footer />
     </div>
   );

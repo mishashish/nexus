@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { Radio } from "lucide-react";
 import { Panel } from "./ui";
 import { useNexus } from "@/lib/nexus-store";
 
@@ -23,38 +22,37 @@ export function ActiveNodeCard() {
   }
 
   return (
-    <Panel id="active-node" className="flex min-h-[280px] flex-col p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="card-head mb-0">
-          <Radio size={16} strokeWidth={1.5} />
+    <Panel id="active-node" className="flex min-h-[240px] flex-col p-5 sm:p-6">
+      <p className="kicker mb-1">seat</p>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="m-0 text-xl font-extrabold tracking-[-0.03em]">
           Node {node?.label ?? "—"}
         </h2>
         <p className="font-mono text-[11px] text-nexus-mute">
-          {yoursId ? "your seat" : "visitor"}
+          {yoursId ? "yours" : "visitor"}
         </p>
       </div>
 
-      <div ref={scroller} className="flex-1 space-y-3 overflow-auto pr-1">
+      <div ref={scroller} className="seat-thread flex-1 space-y-3 overflow-auto pr-1">
         {messages.map((message) =>
           message.role === "user" ? (
-            <div key={message.id} className="appear flex justify-end gap-2">
-              <p className="max-w-[80%] border border-nexus-line px-3 py-2 text-[12px] leading-5">
-                {message.text}
-              </p>
-            </div>
+            <p
+              key={message.id}
+              className="seat-bubble seat-bubble-user ml-auto max-w-[85%] px-3 py-2 text-[13px] leading-5"
+            >
+              {message.text}
+            </p>
           ) : (
-            <div key={message.id} className="appear">
-              <p className="max-w-[90%] text-[12px] leading-5 text-nexus-text/90">
-                {message.text}
-                <span className="mt-1 block font-mono text-[10px] text-nexus-mute">
-                  {message.time}
-                </span>
-              </p>
-            </div>
+            <p key={message.id} className="seat-bubble seat-bubble-mind max-w-[90%] text-[13px] leading-5">
+              {message.text}
+              <span className="mt-1 block font-mono text-[10px] text-nexus-mute">
+                {message.time}
+              </span>
+            </p>
           ),
         )}
         {busy ? (
-          <p className="font-mono text-[11px] text-nexus-mute">the mind is writing…</p>
+          <p className="font-mono text-[11px] text-nexus-mute">listening through the lattice…</p>
         ) : null}
       </div>
 
@@ -63,27 +61,23 @@ export function ActiveNodeCard() {
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="A short public scenario…"
-            className="h-10 flex-1 border border-nexus-line bg-transparent px-3 font-mono text-[12px] text-nexus-text outline-none placeholder:text-nexus-mute/70 focus:border-nexus-violet"
+            placeholder="Speak to the structure…"
+            className="h-10 flex-1 border border-nexus-line bg-transparent px-3 text-[13px] text-nexus-text outline-none placeholder:text-nexus-mute/70 focus:border-nexus-violet"
             maxLength={500}
             disabled={busy}
           />
           <button
             type="submit"
-            className="flex h-10 w-10 items-center justify-center border border-nexus-line text-nexus-text hover:border-nexus-violet"
+            className="btn-primary h-10 px-4"
             aria-label="Send scenario"
             disabled={busy || !draft.trim()}
           >
-            →
+            Send
           </button>
         </form>
       ) : (
-        <button
-          type="button"
-          onClick={enterNode}
-          className="mt-3 h-10 rounded-md border border-nexus-line font-mono text-[11px] tracking-[0.14em] text-nexus-mute hover:text-nexus-text"
-        >
-          Lock a cell to speak
+        <button type="button" onClick={enterNode} className="btn-ghost mt-3">
+          Claim a lot to speak
         </button>
       )}
     </Panel>

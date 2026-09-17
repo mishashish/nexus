@@ -35,6 +35,8 @@ const STORAGE_KEY = "nexus-claimed-node";
 const KEY_ID = "nexus-key";
 const ALIAS_KEY = "nexus-alias";
 const SIGIL_KEY = "nexus-sigil";
+const WALLET_KEY = "nexus-wallet";
+const ACTIVATED_KEY = "nexus-activated";
 const OPEN = firstFree(NETWORK.nodes);
 
 export interface LotReceipt {
@@ -42,6 +44,8 @@ export interface LotReceipt {
   price: number;
   region: string;
   at: number;
+  tx?: string;
+  paid?: boolean;
 }
 
 interface NexusStore {
@@ -64,12 +68,17 @@ interface NexusStore {
   claimingId: string | null;
   sigil: number[];
   stirred: number;
+  wallet: string | null;
+  activated: boolean;
   selectNode: (id: string) => void;
   claimNode: (id: string) => boolean;
-  buyLot: (id: string) => boolean;
+  buyLot: (id: string, paid?: boolean) => boolean;
   startClaim: (id: string) => boolean;
-  finishClaim: () => boolean;
+  finishClaim: (paid?: boolean) => boolean;
   cancelClaim: () => void;
+  connectWallet: () => void;
+  disconnectWallet: () => void;
+  activateCell: () => void;
   enterNode: () => void;
   enterBrowser: () => void;
   leaveBrowser: () => void;
@@ -106,6 +115,8 @@ export function NexusProvider({ children }: { children: ReactNode }) {
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [sigil, setSigil] = useState<number[]>(() => bitsFromKey("unsigned"));
   const [stirred, setStirred] = useState(0);
+  const [wallet, setWallet] = useState<string | null>(null);
+  const [activated, setActivated] = useState(false);
 
   const selected = useMemo(
     () => nodes.find((n) => n.id === selectedId) ?? null,
@@ -142,6 +153,9 @@ export function NexusProvider({ children }: { children: ReactNode }) {
         ),
       );
     }
+    const savedWallet = window.localStorage.getItem(WALLET_KEY);
+    if (savedWallet) setWallet(savedWallet);
+    if (window.localStorage.getItem(ACTIVATED_KEY) === "1") setActivated(true);
   }, []);
 
   const stats = useMemo<SystemStats>(() => {
@@ -202,7 +216,7 @@ export function NexusProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const buyLot = useCallback(
-    (id: string) => {
+    (id: string, paid = false) => {
       const ok = claimNode(id);
       if (!ok) return false;
       enterBrowser();
@@ -214,6 +228,8 @@ export function NexusProvider({ children }: { children: ReactNode }) {
         price: lotPrice(index),
         region: node?.region ?? "cortex",
         at: Date.now(),
+        paid,
+        tx: paid ? `0x${Date.now().toString(16)}…demo` : undefined,
       });
       return true;
     },
@@ -239,14 +255,38 @@ export function NexusProvider({ children }: { children: ReactNode }) {
     [buyLot, nodes],
   );
 
-  const finishClaim = useCallback(() => {
-    if (!claimingId) return false;
-    const id = claimingId;
-    setClaimingId(null);
-    return buyLot(id);
-  }, [buyLot, claimingId]);
+  const finishClaim = useCallback(
+    (paid = false) => {
+      if (!claimingId) return false;
+      const id = claimingId;
+      setClaimingId(null);
+      return buyLot(id, paid);
+    },
+    [buyLot, claimingId],
+  );
 
   const cancelClaim = useCallback(() => setClaimingId(null), []);
+
+  const connectWallet = useCallback(() => {
+    const hex = Array.from({ length: 8 }, () =>
+      Math.floor(Math.random() * 16).toString(16),
+    ).join("");
+    const addr = `0x${hex}…${hex.slice(0, 4)}`;
+    window.localStorage.setItem(WALLET_KEY, addr);
+    setWallet(addr);
+  }, []);
+
+  const disconnectWallet = useCallback(() => {
+    window.localStorage.removeItem(WALLET_KEY);
+    setWallet(null);
+  }, []);
+
+  const activateCell = useCallback(() => {
+    window.localStorage.setItem(ACTIVATED_KEY, "1");
+    setActivated(true);
+    setStirred((n) => n + 1);
+    setVisualTick((n) => n + 1);
+  }, []);
 
   const toggleSigil = useCallback((index: number) => {
     setSigil((prev) => {
@@ -299,10 +339,31 @@ export function NexusProvider({ children }: { children: ReactNode }) {
         text: content,
         time: clock(),
       };
+      const prior = messages.slice(-8);
       setMessages((prev) => [...prev, userMsg]);
       setBusy(true);
-      await new Promise((resolve) => setTimeout(resolve, 900));
-      const reply = mockReply(content);
+
+      let reply = mockReply(content);
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: content,
+            region: yours?.region ?? selected?.region,
+            nodeLabel: yours?.label ?? selected?.label,
+            mood: character.mood,
+            history: prior.map((m) => ({ role: m.role, text: m.text })),
+          }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { reply?: string };
+          if (data.reply?.trim()) reply = data.reply.trim();
+        }
+      } catch {
+        /* keep mock fallback */
+      }
+
       const replyMsg: ChatMessage = {
         id: `n-${Date.now()}`,
         role: "nexus",
@@ -350,7 +411,16 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       setBusy(false);
       return true;
     },
-    [busy, selected?.label, yours?.label, yoursId],
+    [
+      busy,
+      character.mood,
+      messages,
+      selected?.label,
+      selected?.region,
+      yours?.label,
+      yours?.region,
+      yoursId,
+    ],
   );
 
   const value = useMemo<NexusStore>(
@@ -374,12 +444,17 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       claimingId,
       sigil,
       stirred,
+      wallet,
+      activated,
       selectNode,
       claimNode,
       buyLot,
       startClaim,
       finishClaim,
       cancelClaim,
+      connectWallet,
+      disconnectWallet,
+      activateCell,
       enterNode,
       enterBrowser,
       leaveBrowser,
@@ -397,6 +472,9 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       startClaim,
       finishClaim,
       cancelClaim,
+      connectWallet,
+      disconnectWallet,
+      activateCell,
       clearReceipt,
       enterBrowser,
       leaveBrowser,
@@ -410,6 +488,8 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       claimingId,
       sigil,
       stirred,
+      wallet,
+      activated,
       enterNode,
       memories,
       messages,

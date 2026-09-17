@@ -7,11 +7,11 @@ export default function AboutPage() {
     <PageShell>
       <div className="docshero">
         <p className="kicker">constitution</p>
-        <h1>A shared digital character.</h1>
+        <h1>CELLS — a brain structure.</h1>
         <p className="lede">
-          NEXUS is one voice assembled from many traces. Visitors can watch.
-          Anyone who claims a node can leave a scenario. The reply becomes part
-          of a public memory. The character stays itself, no matter how many
+          CELLS is one shared character mapped as 128 cells. Visitors can watch.
+          Anyone who claims a cell can leave a scenario. The reply becomes part
+          of a public memory. The structure stays itself, no matter how many
           people speak.
         </p>
       </div>
@@ -48,8 +48,8 @@ export default function AboutPage() {
             ))}
           </ul>
           <div className="notebox mt-8">
-            Stage 1 is a visual prototype: honeycomb brain, local claim, mock
-            replies. No wallet. No laboratory claims.
+            Stage 1 is a visual prototype: honeycomb structure, local claim, mock
+            replies, demo wallet. No live chain. No laboratory claims.
           </div>
           <p className="mt-6 text-sm">
             <Link href="/docs" className="text-nexus-violet">

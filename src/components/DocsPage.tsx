@@ -39,7 +39,7 @@ export function DocsPage() {
         <p className="kicker">plain language</p>
         <h1>Documentation</h1>
         <p className="lede">
-          What NEXUS is, the words it uses, how to try it, and what is real versus
+          What CELLS is, the words it uses, how to try it, and what is real versus
           simulated right now.
         </p>
       </div>
@@ -62,7 +62,7 @@ export function DocsPage() {
           <article className="doc-section" id="overview">
             <h2>Overview</h2>
             <p>
-              NEXUS is one shared character with no single author. Instead of a
+              CELLS is one shared character with no single author. Instead of a
               creator deciding what it thinks and says,{" "}
               <b>128 people each hold a node</b> — a seat in the character&apos;s
               mind. Anyone holding a node can send it a short scenario: a memory, a
@@ -81,7 +81,7 @@ export function DocsPage() {
             <h2>The concept</h2>
             <p>
               Most digital characters have one owner who controls their personality
-              and memory. NEXUS flips that: the voice is split into 128 equal
+              and memory. CELLS flips that: the voice is split into 128 equal
               seats. No single node holder can dictate who the character becomes —
               it is the sum of everything all 128 people (and its own autonomous
               thoughts) have sent it over time.
@@ -193,7 +193,7 @@ export function DocsPage() {
                   <p>
                     Open{" "}
                     <Link href="/#nodes">The 128 nodes</Link> and click any
-                    blooming cell. Pink-blue means free, rose means claimed,
+                    open cell. Pink-blue means free, rose means claimed,
                     vermillion means yours.
                   </p>
                 </div>
@@ -271,7 +271,7 @@ export function DocsPage() {
               <details>
                 <summary>Is this an investment?</summary>
                 <p>
-                  No. NEXUS is a creative experiment in collectively authoring a
+                  No. CELLS is a creative experiment in collectively authoring a
                   character, not a financial product.
                 </p>
               </details>
@@ -296,7 +296,7 @@ export function DocsPage() {
               </div>
               <div>
                 <dt>Shared replies</dt>
-                <dd>Scenarios stay public and tint the next mock thought.</dd>
+                <dd>Scenarios go to Gemini with the CELLS lore prompt and tint nearby cells.</dd>
               </div>
               <div>
                 <dt>Later</dt>
