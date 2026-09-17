@@ -13,7 +13,7 @@ export function PageShell({
 }) {
   return (
     <div
-      className={`mx-auto min-h-screen px-4 py-2 sm:px-6 ${
+      className={`site-shell mx-auto min-h-screen px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-6 ${
         wide ? "max-w-[1100px]" : "max-w-[1040px]"
       }`}
     >

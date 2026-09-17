@@ -38,25 +38,25 @@ export function NetworkPanel() {
   return (
     <Panel
       id="network-panel"
-      className="panel-dark relative flex min-h-[520px] flex-col p-0 sm:min-h-[600px] lg:min-h-[640px]"
+      className="panel-dark network-panel relative flex min-h-[420px] flex-col p-0 sm:min-h-[560px] lg:min-h-[640px]"
     >
-      <div className="flex items-start justify-between gap-4 px-5 pt-5">
-        <div className="flex items-center gap-2">
-          <Hexagon size={16} strokeWidth={1.5} className="text-nexus-violet" />
-          <div>
+      <div className="flex items-start justify-between gap-3 px-4 pt-4 sm:gap-4 sm:px-5 sm:pt-5">
+        <div className="flex min-w-0 items-center gap-2">
+          <Hexagon size={16} strokeWidth={1.5} className="shrink-0 text-nexus-violet" />
+          <div className="min-w-0">
             <p className="font-mono text-sm tracking-[0.08em] text-nexus-text">
               {selected ? tag : "CELL"}
             </p>
-            <p className="mt-1 text-[12px] text-nexus-mute">
+            <p className="mt-1 truncate text-[12px] text-nexus-mute">
               {myth.title}
               <span className="mx-2 opacity-40">·</span>
               {isYours ? "yours" : isFree ? "available" : selected?.status ?? "idle"}
             </p>
           </div>
         </div>
-        <p className="font-mono text-[11px] text-nexus-mute">128 cells</p>
+        <p className="shrink-0 font-mono text-[11px] text-nexus-mute">128</p>
       </div>
-      <div className="relative min-h-[400px] flex-1 sm:min-h-[480px]">
+      <div className="relative min-h-[280px] flex-1 sm:min-h-[420px] lg:min-h-[480px]">
         <HexBrain3D />
       </div>
       <div className="lotbuy">

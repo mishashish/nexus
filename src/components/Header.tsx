@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LogoMark, SkyToggle } from "./illustrations";
 import { useNexus } from "@/lib/nexus-store";
 
@@ -38,19 +38,32 @@ export function Header() {
     }
   }
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
-    <header className="relative z-20 border-b border-nexus-line/60 py-4">
-      <div className="flex items-center justify-between gap-4">
+    <header className="site-header relative z-20 border-b border-nexus-line/60 py-3 sm:py-4">
+      <div className="flex items-center justify-between gap-3">
         <Link
           href="/"
-          className="flex items-center gap-2.5 text-nexus-text"
+          className="flex min-h-11 items-center gap-2.5 text-nexus-text"
           onClick={onLogo}
         >
           <LogoMark className="h-8 w-8 text-nexus-text" />
           <span className="cells-word text-[13px] text-nexus-text">CELLS</span>
         </Link>
 
-        <nav className="hidden items-center gap-7 md:flex" aria-label="Main">
+        <nav className="site-nav" aria-label="Main">
           {LINKS.map((link) => {
             const active =
               (link.href === "/docs" && pathname.startsWith("/docs")) ||
@@ -62,11 +75,7 @@ export function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-[13px] ${
-                  active
-                    ? "border-b-2 border-nexus-green pb-0.5 text-nexus-text"
-                    : "text-nexus-mute hover:text-nexus-text"
-                }`}
+                className={`site-nav-link ${active ? "is-active" : ""}`}
               >
                 {link.label}
               </Link>
@@ -74,46 +83,61 @@ export function Header() {
           })}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <SkyToggle />
-          <Link href={yours ? "/me" : "/#contracts"} className="btn-primary hidden sm:inline-flex">
-            {yours ? "Cabinet" : "Contracts"}
+          <Link
+            href={yours ? "/me" : "/#contracts"}
+            className="btn-primary header-cta"
+          >
+            <span className="header-cta-full">{yours ? "Cabinet" : "Contracts"}</span>
+            <span className="header-cta-short">{yours ? "Cabinet" : "Buy"}</span>
           </Link>
           <button
             type="button"
-            className="rounded-sm border border-nexus-line p-2 text-nexus-mute hover:text-nexus-text md:hidden"
-            aria-label="Open menu"
+            className="menu-toggle"
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
           >
-            <span className="block h-px w-4 bg-current" />
-            <span className="mt-1 block h-px w-4 bg-current" />
-            <span className="mt-1 block h-px w-3 bg-current" />
+            <span className={open ? "is-open" : undefined} aria-hidden>
+              <i />
+              <i />
+              <i />
+            </span>
           </button>
         </div>
       </div>
 
       {open ? (
-        <div className="absolute right-0 top-16 z-30 w-52 rounded-xl border border-nexus-line bg-nexus-panel p-4">
-          <div className="flex flex-col gap-3">
-            {LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm text-nexus-text"
-                onClick={() => setOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
+        <>
+          <button
+            type="button"
+            className="mobile-nav-scrim"
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+          />
+          <nav className="mobile-nav" aria-label="Mobile">
+            <div className="mobile-nav-links">
+              {LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="mobile-nav-link"
+                  onClick={() => setOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
             <Link
               href={yours ? "/me" : "/#contracts"}
-              className="btn-primary mt-2"
+              className="btn-primary mobile-nav-cta"
               onClick={() => setOpen(false)}
             >
-              {yours ? "Cabinet" : "Contracts"}
+              {yours ? "Open cabinet" : "Buy a cell"}
             </Link>
-          </div>
-        </div>
+          </nav>
+        </>
       ) : null}
     </header>
   );

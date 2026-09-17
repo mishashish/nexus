@@ -72,7 +72,7 @@ export function NodeMap() {
       if (!parent) return;
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       const w = parent.clientWidth;
-      const h = Math.max(400, Math.min(540, w * 0.55));
+      const h = Math.max(280, Math.min(540, w < 640 ? w * 0.92 : w * 0.55));
       canvas!.width = Math.floor(w * dpr);
       canvas!.height = Math.floor(h * dpr);
       canvas!.style.width = `${w}px`;

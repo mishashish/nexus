@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import { NexusProvider } from "@/lib/nexus-store";
 import { Ticket } from "@/components/Ticket";
@@ -21,6 +21,16 @@ export const metadata: Metadata = {
   title: "CELLS — structure of a shared mind",
   description:
     "CELLS is one shared digital character mapped as 128 brain cells. Claim a seat, buy a contract, speak from the structure.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#080601" },
+    { media: "(prefers-color-scheme: light)", color: "#fceafc" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

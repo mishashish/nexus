@@ -9,14 +9,16 @@ export function IntroductionPanel() {
   const { yours, stats } = useNexus();
 
   return (
-    <Panel className="rastr-panel flex h-full flex-col justify-center p-5 sm:p-7">
+    <Panel className="rastr-panel flex h-full flex-col justify-center p-4 sm:p-7">
       <p className="kicker">{BRAND.tagline}</p>
-      <RastrType text="CELLS" height={88} density={11} className="mt-1 max-w-full" />
-      <p className="lede mt-5">
+      <div className="rastr-hero-wrap">
+        <RastrType text="CELLS" height={72} density={11} className="rastr-hero mt-1 max-w-full" />
+      </div>
+      <p className="lede mt-4 sm:mt-5">
         A shared character built as a <b>brain structure</b> — {stats.total}{" "}
         addressable cells. Buy a contract, claim your seat, speak from the map.
       </p>
-      <div className="flex flex-wrap gap-3">
+      <div className="intro-actions flex flex-wrap gap-2 sm:gap-3">
         {yours ? (
           <a href="/me" className="btn-primary">
             Open cabinet
@@ -26,13 +28,13 @@ export function IntroductionPanel() {
             <a href="#contracts" className="btn-primary">
               View contracts
             </a>
-            <a href="#network-panel" className="btn-ghost px-2 py-2">
+            <a href="#network-panel" className="btn-ghost">
               Structure
             </a>
           </>
         )}
       </div>
-      <p className="mt-8 font-mono text-[11px] tracking-[0.12em] text-nexus-mute">
+      <p className="mt-6 font-mono text-[10px] tracking-[0.12em] text-nexus-mute sm:mt-8 sm:text-[11px]">
         {stats.claimed} CLAIMED / {stats.memory} TRACES / RSTR.01
       </p>
     </Panel>
