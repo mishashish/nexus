@@ -3,14 +3,14 @@
 @theme {
   --color-nexus-bg: #080601;
   --color-nexus-panel: #0e0c0a;
-  --color-nexus-violet: #fceafc;
-  --color-nexus-purple: #b8a8b0;
+  --color-nexus-violet: #fb67c5;
+  --color-nexus-purple: #db92ba;
   --color-nexus-magenta: #ec3f27;
   --color-nexus-blue: #3d56da;
   --color-nexus-cyan: #3d56da;
   --color-nexus-green: #ec3f27;
   --color-nexus-text: #fceafc;
-  --color-nexus-mute: #9a8a92;
+  --color-nexus-mute: #db92ba;
   --color-nexus-line: #2a2220;
 }
 
@@ -34,40 +34,56 @@ body {
 body {
   font-family: var(--font-display), ui-sans-serif, sans-serif;
   font-weight: 500;
+  /* MiraAI exact bloom: #FCA0FB #FB67C5 #EC3F27 #3D56DA #5B240A on #080601 */
   background:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 3px,
-      rgba(252, 234, 252, 0.015) 3px,
-      rgba(252, 234, 252, 0.015) 4px
-    ),
+    radial-gradient(58% 42% at 100% -8%, rgba(252, 160, 251, 0.42) 0%, transparent 58%),
+    radial-gradient(48% 38% at -4% 108%, rgba(236, 63, 39, 0.48) 0%, transparent 52%),
+    radial-gradient(36% 32% at 78% 86%, rgba(251, 103, 197, 0.22) 0%, transparent 50%),
+    radial-gradient(34% 28% at 18% -4%, rgba(61, 86, 218, 0.28) 0%, transparent 48%),
+    radial-gradient(28% 22% at 52% 48%, rgba(91, 36, 10, 0.35) 0%, transparent 60%),
     #080601;
   letter-spacing: -0.01em;
+  isolation: isolate;
+}
+
+/* Film grain over bloom — same tactile noise as MiraAI boards */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.22;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
 }
 
 .panel {
-  background: #0e0c0a;
+  background: rgba(14, 12, 10, 0.72);
   border: 1px solid rgba(252, 234, 252, 0.14);
   border-radius: 0;
-  box-shadow: none;
-  backdrop-filter: none;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px);
   transition: border-color 0.15s ease;
 }
 
 .panel:not(.panel-dark):hover {
-  border-color: rgba(236, 63, 39, 0.55);
+  border-color: rgba(252, 160, 251, 0.35);
 }
 
 .panel-dark {
-  background: #0a0807;
+  background: rgba(10, 8, 7, 0.88);
   border-color: rgba(252, 234, 252, 0.14);
   color: var(--color-nexus-text);
   --color-nexus-text: #fceafc;
-  --color-nexus-mute: #9a8a92;
+  --color-nexus-mute: #db92ba;
   --color-nexus-line: #2a2220;
-  --color-nexus-violet: #fceafc;
-  box-shadow: none;
+  --color-nexus-violet: #fb67c5;
+  box-shadow:
+    0 0 90px rgba(236, 63, 39, 0.18),
+    0 22px 55px rgba(91, 36, 10, 0.16);
+  backdrop-filter: blur(16px);
 }
 
 h1,
@@ -885,46 +901,50 @@ code {
 
 html.linen {
   color-scheme: light;
-  --color-nexus-bg: #f5f5f5;
-  --color-nexus-panel: #ffffff;
-  --color-nexus-violet: #111111;
-  --color-nexus-purple: #333333;
-  --color-nexus-magenta: #222222;
+  --color-nexus-bg: #fceafc;
+  --color-nexus-panel: #fff7ff;
+  --color-nexus-violet: #c43a6e;
+  --color-nexus-purple: #7a4a8a;
+  --color-nexus-magenta: #c43a20;
   --color-nexus-text: #080601;
-  --color-nexus-mute: #2a2a2a;
-  --color-nexus-line: #d0d0d0;
+  --color-nexus-mute: #5a3a48;
+  --color-nexus-line: #e0d0d8;
   --color-nexus-green: #c43a20;
 }
 
 html.linen body {
   background:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 3px,
-      rgba(8, 6, 1, 0.03) 3px,
-      rgba(8, 6, 1, 0.03) 4px
-    ),
-    #f2eee8;
+    radial-gradient(58% 42% at 100% -8%, #fca0fb 0%, transparent 58%),
+    radial-gradient(48% 38% at -4% 108%, #ec3f27 0%, transparent 52%),
+    radial-gradient(36% 32% at 78% 86%, #fb67c5 0%, transparent 50%),
+    radial-gradient(34% 28% at 18% -4%, #3d56da 0%, transparent 48%),
+    #fceafc;
   color: #080601;
 }
 
+html.linen body::before {
+  opacity: 0.14;
+  mix-blend-mode: multiply;
+}
+
 html.linen .panel {
-  background: #ffffff;
+  background: rgba(255, 247, 255, 0.72);
   border-color: rgba(8, 6, 1, 0.12);
-  box-shadow: 0 8px 24px rgba(8, 6, 1, 0.04);
+  box-shadow: 0 18px 50px rgba(91, 36, 10, 0.08);
+  backdrop-filter: blur(16px);
   color: #080601;
 }
 
 html.linen .panel-dark {
-  background: #ffffff;
+  background: rgba(255, 247, 255, 0.82);
   border-color: rgba(8, 6, 1, 0.12);
   color: #080601;
   --color-nexus-text: #080601;
-  --color-nexus-mute: #2a2a2a;
-  --color-nexus-line: #d0d0d0;
-  --color-nexus-violet: #111111;
-  box-shadow: 0 8px 24px rgba(8, 6, 1, 0.04);
+  --color-nexus-mute: #5a3a48;
+  --color-nexus-line: #e0d0d8;
+  --color-nexus-violet: #c43a6e;
+  box-shadow: 0 18px 50px rgba(91, 36, 10, 0.08);
+  backdrop-filter: blur(16px);
 }
 
 html.linen .panel-dark .lotbuy-info strong,
