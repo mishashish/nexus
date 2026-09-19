@@ -18,9 +18,10 @@ type Body = {
 
 const MODELS = [
   process.env.GEMINI_MODEL,
-  "gemini-2.0-flash",
-  "gemini-2.5-flash",
-  "gemini-1.5-flash",
+  "gemini-3.6-flash",
+  "gemini-flash-latest",
+  "gemini-3.5-flash",
+  "gemini-2.5-flash-lite",
 ].filter(Boolean) as string[];
 
 async function callGemini(model: string, apiKey: string, ctx: ChatContext) {
@@ -37,9 +38,10 @@ async function callGemini(model: string, apiKey: string, ctx: ChatContext) {
       },
       contents: buildGeminiContents(ctx),
       generationConfig: {
-        temperature: 0.95,
-        topP: 0.92,
-        maxOutputTokens: 280,
+        temperature: 1.05,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 512,
       },
     }),
   });

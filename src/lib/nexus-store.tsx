@@ -22,6 +22,23 @@ import {
 import { makeKey, sigilBits as bitsFromKey } from "./chamber";
 import { firstFree, lotPrice, lotTag } from "./lots";
 import { playBuyChime } from "./linen-sound";
+import {
+  CHAIN_CONFIG,
+  CHAIN_EXPLORER,
+  priceEthForIndex,
+  treasuryAddress,
+} from "./contracts";
+import {
+  WalletError,
+  connectInjected,
+  ensureChain,
+  explorerTxUrl,
+  getInjectedProvider,
+  hasInjectedWallet,
+  payForLot,
+  readAccounts,
+  subscribeWallet,
+} from "./wallet";
 import type {
   ChatMessage,
   CharacterState,
@@ -45,7 +62,9 @@ export interface LotReceipt {
   region: string;
   at: number;
   tx?: string;
+  explorerUrl?: string;
   paid?: boolean;
+  ethPaid?: string;
 }
 
 interface NexusStore {
@@ -69,15 +88,19 @@ interface NexusStore {
   sigil: number[];
   stirred: number;
   wallet: string | null;
+  walletBusy: boolean;
+  walletError: string | null;
   activated: boolean;
+  hasWalletExt: boolean;
   selectNode: (id: string) => void;
   claimNode: (id: string) => boolean;
-  buyLot: (id: string, paid?: boolean) => boolean;
+  buyLot: (id: string, paid?: boolean, tx?: string, ethPaid?: string) => boolean;
   startClaim: (id: string) => boolean;
-  finishClaim: (paid?: boolean) => boolean;
+  finishClaim: (paid?: boolean) => Promise<boolean>;
   cancelClaim: () => void;
-  connectWallet: () => void;
+  connectWallet: () => Promise<boolean>;
   disconnectWallet: () => void;
+  clearWalletError: () => void;
   activateCell: () => void;
   enterNode: () => void;
   enterBrowser: () => void;
@@ -116,7 +139,10 @@ export function NexusProvider({ children }: { children: ReactNode }) {
   const [sigil, setSigil] = useState<number[]>(() => bitsFromKey("unsigned"));
   const [stirred, setStirred] = useState(0);
   const [wallet, setWallet] = useState<string | null>(null);
+  const [walletBusy, setWalletBusy] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
   const [activated, setActivated] = useState(false);
+  const [hasWalletExt, setHasWalletExt] = useState(false);
 
   const selected = useMemo(
     () => nodes.find((n) => n.id === selectedId) ?? null,
@@ -156,6 +182,33 @@ export function NexusProvider({ children }: { children: ReactNode }) {
     const savedWallet = window.localStorage.getItem(WALLET_KEY);
     if (savedWallet) setWallet(savedWallet);
     if (window.localStorage.getItem(ACTIVATED_KEY) === "1") setActivated(true);
+    setHasWalletExt(hasInjectedWallet());
+
+    const provider = getInjectedProvider();
+    if (!provider) return;
+
+    void (async () => {
+      const accounts = await readAccounts(provider);
+      if (accounts[0]) {
+        window.localStorage.setItem(WALLET_KEY, accounts[0]);
+        setWallet(accounts[0]);
+      }
+    })();
+
+    return subscribeWallet(provider, {
+      onAccounts: (accounts) => {
+        if (!accounts[0]) {
+          window.localStorage.removeItem(WALLET_KEY);
+          setWallet(null);
+          return;
+        }
+        window.localStorage.setItem(WALLET_KEY, accounts[0]);
+        setWallet(accounts[0]);
+      },
+      onChain: () => {
+        /* UI reads chain at pay time */
+      },
+    });
   }, []);
 
   const stats = useMemo<SystemStats>(() => {
@@ -216,7 +269,7 @@ export function NexusProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const buyLot = useCallback(
-    (id: string, paid = false) => {
+    (id: string, paid = false, tx?: string, ethPaid?: string) => {
       const ok = claimNode(id);
       if (!ok) return false;
       enterBrowser();
@@ -229,7 +282,9 @@ export function NexusProvider({ children }: { children: ReactNode }) {
         region: node?.region ?? "cortex",
         at: Date.now(),
         paid,
-        tx: paid ? `0x${Date.now().toString(16)}…demo` : undefined,
+        tx,
+        ethPaid,
+        explorerUrl: tx ? explorerTxUrl(CHAIN_EXPLORER, tx) : undefined,
       });
       return true;
     },
@@ -241,45 +296,92 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       const target = nodes.find((n) => n.id === id);
       if (!target) return false;
       setSelectedId(id);
+      setWalletError(null);
       if (target.status === "yours") return true;
       if (target.status !== "available") return false;
-      if (
-        typeof window !== "undefined" &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      ) {
-        return buyLot(id);
-      }
       setClaimingId(id);
       return true;
     },
-    [buyLot, nodes],
+    [nodes],
   );
 
   const finishClaim = useCallback(
-    (paid = false) => {
+    async (paid = false) => {
       if (!claimingId) return false;
       const id = claimingId;
-      setClaimingId(null);
-      return buyLot(id, paid);
+      if (!paid) {
+        setClaimingId(null);
+        return buyLot(id, false);
+      }
+
+      setWalletBusy(true);
+      setWalletError(null);
+      try {
+        const node = nodes.find((n) => n.id === id);
+        const index = node?.index ?? 0;
+        const ethAmount = priceEthForIndex(index);
+        const result = await payForLot({
+          ethAmount,
+          treasury: treasuryAddress(),
+          chain: CHAIN_CONFIG,
+          expectedAddress: wallet,
+        });
+        window.localStorage.setItem(WALLET_KEY, result.address);
+        setWallet(result.address);
+        setClaimingId(null);
+        return buyLot(id, true, result.hash, ethAmount);
+      } catch (err) {
+        const msg =
+          err instanceof WalletError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : "Payment failed.";
+        setWalletError(msg);
+        return false;
+      } finally {
+        setWalletBusy(false);
+      }
     },
-    [buyLot, claimingId],
+    [buyLot, claimingId, nodes, wallet],
   );
 
-  const cancelClaim = useCallback(() => setClaimingId(null), []);
+  const cancelClaim = useCallback(() => {
+    setClaimingId(null);
+    setWalletError(null);
+  }, []);
 
-  const connectWallet = useCallback(() => {
-    const hex = Array.from({ length: 8 }, () =>
-      Math.floor(Math.random() * 16).toString(16),
-    ).join("");
-    const addr = `0x${hex}…${hex.slice(0, 4)}`;
-    window.localStorage.setItem(WALLET_KEY, addr);
-    setWallet(addr);
+  const connectWallet = useCallback(async () => {
+    setWalletBusy(true);
+    setWalletError(null);
+    try {
+      setHasWalletExt(hasInjectedWallet());
+      const { provider, address } = await connectInjected();
+      await ensureChain(provider, CHAIN_CONFIG);
+      window.localStorage.setItem(WALLET_KEY, address);
+      setWallet(address);
+      return true;
+    } catch (err) {
+      const msg =
+        err instanceof WalletError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not connect wallet.";
+      setWalletError(msg);
+      return false;
+    } finally {
+      setWalletBusy(false);
+    }
   }, []);
 
   const disconnectWallet = useCallback(() => {
     window.localStorage.removeItem(WALLET_KEY);
     setWallet(null);
+    setWalletError(null);
   }, []);
+
+  const clearWalletError = useCallback(() => setWalletError(null), []);
 
   const activateCell = useCallback(() => {
     window.localStorage.setItem(ACTIVATED_KEY, "1");
@@ -445,7 +547,10 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       sigil,
       stirred,
       wallet,
+      walletBusy,
+      walletError,
       activated,
+      hasWalletExt,
       selectNode,
       claimNode,
       buyLot,
@@ -454,6 +559,7 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       cancelClaim,
       connectWallet,
       disconnectWallet,
+      clearWalletError,
       activateCell,
       enterNode,
       enterBrowser,
@@ -474,6 +580,7 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       cancelClaim,
       connectWallet,
       disconnectWallet,
+      clearWalletError,
       activateCell,
       clearReceipt,
       enterBrowser,
@@ -489,6 +596,9 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       sigil,
       stirred,
       wallet,
+      walletBusy,
+      walletError,
+      hasWalletExt,
       activated,
       enterNode,
       memories,

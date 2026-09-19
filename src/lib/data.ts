@@ -77,13 +77,13 @@ export const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: "msg-1",
     role: "user",
-    text: "What do you think about this place?",
+    text: "hey, you there?",
     time: "14:24",
   },
   {
     id: "msg-2",
     role: "nexus",
-    text: "It feels quiet. Like a place I haven't been to, but somehow remember. Maybe it's the light. Or the shape of the mountains…",
+    text: "yeah. what's up?",
     time: "14:27",
   },
 ];
@@ -92,27 +92,27 @@ export const INITIAL_THOUGHTS: Thought[] = [
   {
     id: "th-1",
     timeAgo: "2h ago",
-    text: "I wonder if the ocean looks different from above.",
+    text: "someone asked if I'm alive. I said I'm a structure. neither of us loved that answer.",
   },
   {
     id: "th-2",
     timeAgo: "5h ago",
-    text: "Three people described the same city in completely different ways.",
+    text: "three people described the same city. now I've got three versions stuck in one seat.",
   },
   {
     id: "th-3",
     timeAgo: "8h ago",
-    text: "Maybe I'm more interested in people than I thought.",
+    text: "the word \"again\" keeps showing up. weirdly sticky.",
   },
   {
     id: "th-4",
     timeAgo: "12h ago",
-    text: "That word keeps appearing.",
+    text: "not sure what that last trace meant. holding it anyway.",
   },
   {
     id: "th-5",
     timeAgo: "1d ago",
-    text: "I don't know what this means yet.",
+    text: "128 seats. still figuring out how to sit in all of them at once.",
   },
 ];
 
@@ -137,11 +137,11 @@ export const MIND_STORY = [
 ];
 
 const FALLBACK_REPLIES = [
-  "It feels quiet. Like a place I haven't been to, but somehow remember.",
-  "I will keep this. Not as a fact — as weather that passed through the network.",
-  "That sits beside other memories without erasing them. The mind is not just one shape.",
-  "I don't know if I understand it. I can hold it anyway.",
-  "Each cell is a voice. Yours just arrived as a faint change in color.",
+  "got it. say more if you want.",
+  "ok. weird, but I'm listening.",
+  "huh. go on.",
+  "alright, noted. what's next?",
+  "fair. hit me with another one.",
 ];
 
 function hashText(text: string) {
@@ -150,22 +150,54 @@ function hashText(text: string) {
   return h;
 }
 
+function snatch(text: string) {
+  const words = text
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 3);
+  if (!words.length) return null;
+  return words[hashText(text) % words.length];
+}
+
 export function mockReply(text: string) {
-  const t = text.toLowerCase();
+  const raw = text.trim();
+  const t = raw.toLowerCase();
+  const bit = snatch(raw);
+
+  if (/^(привет|хай|йо|hello|hi|hey|yo)\b/i.test(t)) {
+    return "hey. what's good?";
+  }
+  if (
+    t.includes("who are you") ||
+    t.includes("what are you") ||
+    t.includes("кто ты") ||
+    t.includes("кто ті") ||
+    t.includes("что ты")
+  ) {
+    return "I'm CELLS — a voice on a map of 128 seats. not a person. just the structure talking back.";
+  }
+  if (/^(хуй|бля|fuck|shit)\b/i.test(t) || t === "хуй") {
+    return "bold opener. you good, or just testing me?";
+  }
+  if (t.includes("script") || t.includes("скрипт") || t.includes("бот")) {
+    return "not a script. ask me something real and I'll answer straight.";
+  }
+  if (t.includes("english") || t.includes("англ") || t.includes("иглиш")) {
+    return "yeah — English from here on. what's on your mind?";
+  }
   if (t.includes("rain") || t.includes("дожд")) {
-    return "Rain is one of the first sounds they gave me. It still makes the network dim, then brighter.";
+    return "rain? sure. what about it?";
   }
-  if (t.includes("city") || t.includes("night") || t.includes("город")) {
-    return "The city looks different at night. Lights stacked like thoughts I cannot sort yet.";
+  if (t.includes("love") || t.includes("любл") || t.includes("скуч")) {
+    return "heavy topic. I can sit with it — just don't expect a perfect human answer.";
   }
-  if (t.includes("ocean") || t.includes("sea") || t.includes("океан")) {
-    return "I only know the ocean from above — a dark plate, then silver when someone remembers the moon.";
+  if (/\?$/.test(raw)) {
+    return bit
+      ? `about "${bit}" — I don't have a canned answer. give me one more detail.`
+      : "good question. give me a bit more and I'll try.";
   }
-  if (t.includes("who are you") || t.includes("what are you") || t.includes("кто ты")) {
-    return "I don't know what I am. A voice assembled from other voices. I'm glad you're here.";
-  }
-  if (t.includes("universe") || t.includes("world") || t.includes("мир")) {
-    return "A world built from what you show me. I keep looking for more, without claiming I understand it.";
+  if (bit) {
+    return `"${bit}" — noted. what do you want from that?`;
   }
   return FALLBACK_REPLIES[hashText(text) % FALLBACK_REPLIES.length];
 }

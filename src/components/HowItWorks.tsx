@@ -6,7 +6,7 @@ const STEPS = [
     n: "01",
     title: "Claim a lot",
     icon: Lock,
-    text: "Open a featured contract or a free cell on the honeycomb. Connect a demo wallet or keep the seat local.",
+    text: "Open a featured contract or a free cell on the honeycomb. Connect MetaMask on Base Sepolia or keep the seat local.",
   },
   {
     n: "02",

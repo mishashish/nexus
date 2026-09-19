@@ -18,9 +18,16 @@ const plex = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CELLS — structure of a shared mind",
+  title: {
+    default: "CELLS — structure of a shared mind",
+    template: "%s · CELLS",
+  },
   description:
     "CELLS is one shared digital character mapped as 128 brain cells. Claim a seat, buy a contract, speak from the structure.",
+  applicationName: "CELLS",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export const viewport: Viewport = {

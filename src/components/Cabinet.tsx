@@ -6,10 +6,11 @@ import { CellViewer } from "./CellViewer";
 import { PageShell } from "./PageShell";
 import { BRAIN } from "@/lib/brain-hex";
 import { REGION_MYTH, shortKey } from "@/lib/chamber";
-import { CHAIN_LABEL, LOT_CONTRACT } from "@/lib/contracts";
+import { CHAIN_LABEL, treasuryAddress } from "@/lib/contracts";
 import { playTap } from "@/lib/linen-sound";
 import { lotPrice, lotTag } from "@/lib/lots";
 import { useNexus } from "@/lib/nexus-store";
+import { shortAddress } from "@/lib/wallet";
 
 const REGIONS = [
   "all",
@@ -40,6 +41,8 @@ export function Cabinet() {
     wallet,
     connectWallet,
     disconnectWallet,
+    walletBusy,
+    hasWalletExt,
     activated,
     activateCell,
     stir,
@@ -117,7 +120,7 @@ export function Cabinet() {
             {!entered
               ? "Open the ledger to see owned cells, neighbors, and the living viewer — like a Void cabinet for the brain map."
               : wallet
-                ? `${wallet} · ${alias || "unnamed"}`
+                ? `${shortAddress(wallet)} · ${alias || "unnamed"}`
                 : "Wallet optional. Local key keeps your seat."}
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
@@ -128,12 +131,33 @@ export function Cabinet() {
             ) : (
               <>
                 {wallet ? (
-                  <button type="button" className="btn-ghost" onClick={disconnectWallet}>
-                    {wallet}
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    title={wallet}
+                    disabled={walletBusy}
+                    onClick={disconnectWallet}
+                  >
+                    {shortAddress(wallet)}
                   </button>
                 ) : (
-                  <button type="button" className="btn-primary" onClick={connectWallet}>
-                    Connect wallet
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    disabled={walletBusy}
+                    onClick={() => {
+                      if (!hasWalletExt) {
+                        window.open("https://metamask.io/download/", "_blank");
+                        return;
+                      }
+                      void connectWallet();
+                    }}
+                  >
+                    {walletBusy
+                      ? "Connecting…"
+                      : hasWalletExt
+                        ? "Connect MetaMask"
+                        : "Install MetaMask"}
                   </button>
                 )}
                 <Link href="/#contracts" className="btn-ghost">
@@ -265,12 +289,16 @@ export function Cabinet() {
                         <dd>{selected.region}</dd>
                       </div>
                       <div>
-                        <dt>Contract</dt>
-                        <dd>{LOT_CONTRACT}</dd>
-                      </div>
-                      <div>
                         <dt>Chain</dt>
                         <dd>{CHAIN_LABEL}</dd>
+                      </div>
+                      <div>
+                        <dt>Treasury</dt>
+                        <dd>
+                          {treasuryAddress()
+                            ? shortAddress(treasuryAddress()!)
+                            : "demo / self"}
+                        </dd>
                       </div>
                     </dl>
                     {isOwned ? (
