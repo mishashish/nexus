@@ -25,7 +25,8 @@ import { playBuyChime } from "./linen-sound";
 import {
   CHAIN_CONFIG,
   CHAIN_EXPLORER,
-  priceEthForIndex,
+  formatSeatPrice,
+  priceAmountForIndex,
   treasuryAddress,
 } from "./contracts";
 import {
@@ -48,13 +49,50 @@ import type {
   Thought,
 } from "./types";
 
-const STORAGE_KEY = "nexus-claimed-node";
 const KEY_ID = "nexus-key";
 const ALIAS_KEY = "nexus-alias";
 const SIGIL_KEY = "nexus-sigil";
 const WALLET_KEY = "nexus-wallet";
 const ACTIVATED_KEY = "nexus-activated";
 const OPEN = firstFree(NETWORK.nodes);
+
+type ServerSeat = {
+  seatId: string;
+  wallet: string;
+  txHash: string;
+  ethPaid: string;
+  claimedAt: number;
+  nodeIndex: number;
+};
+
+function applySeatsToNodes(
+  nodes: NetworkNode[],
+  seats: ServerSeat[],
+  wallet: string | null,
+): { nodes: NetworkNode[]; yoursId: string | null } {
+  const byId = new Map(seats.map((s) => [s.seatId, s]));
+  const walletLc = wallet?.toLowerCase() ?? null;
+  let yoursId: string | null = null;
+
+  const next = nodes.map((node) => {
+    const seat = byId.get(node.id);
+    if (!seat) {
+      if (node.status === "yours" || node.status === "claimed") {
+        return { ...node, status: "available" as const, kind: "idle" as const };
+      }
+      return node;
+    }
+    const mine = walletLc && seat.wallet === walletLc;
+    if (mine) yoursId = node.id;
+    return {
+      ...node,
+      status: mine ? ("yours" as const) : ("claimed" as const),
+      kind: mine ? ("signal" as const) : ("memory" as const),
+    };
+  });
+
+  return { nodes: next, yoursId };
+}
 
 export interface LotReceipt {
   tag: string;
@@ -96,7 +134,7 @@ interface NexusStore {
   claimNode: (id: string) => boolean;
   buyLot: (id: string, paid?: boolean, tx?: string, ethPaid?: string) => boolean;
   startClaim: (id: string) => boolean;
-  finishClaim: (paid?: boolean) => Promise<boolean>;
+  finishClaim: () => Promise<boolean>;
   cancelClaim: () => void;
   connectWallet: () => Promise<boolean>;
   disconnectWallet: () => void;
@@ -156,27 +194,15 @@ export function NexusProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const savedKey = window.localStorage.getItem(KEY_ID);
     const savedAlias = window.localStorage.getItem(ALIAS_KEY) ?? "";
-    const savedNode = window.localStorage.getItem(STORAGE_KEY);
-    const key = savedKey || (savedNode ? makeKey() : null);
-    if (key) {
-      if (!savedKey) window.localStorage.setItem(KEY_ID, key);
-      setKeyId(key);
+    if (savedKey) {
+      setKeyId(savedKey);
       setEntered(true);
       setAliasState(savedAlias);
       const painted = window.localStorage.getItem(SIGIL_KEY);
       setSigil(
         painted && painted.length === 64
           ? painted.split("").map((c) => (c === "1" ? 1 : 0))
-          : bitsFromKey(key),
-      );
-    }
-    if (savedNode) {
-      setYoursId(savedNode);
-      setSelectedId(savedNode);
-      setNodes((prev) =>
-        prev.map((node) =>
-          node.id === savedNode ? { ...node, status: "yours", kind: "signal" } : node,
-        ),
+          : bitsFromKey(savedKey),
       );
     }
     const savedWallet = window.localStorage.getItem(WALLET_KEY);
@@ -210,6 +236,36 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       },
     });
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function syncSeats() {
+      try {
+        const res = await fetch("/api/seats", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { seats?: ServerSeat[] };
+        if (cancelled || !Array.isArray(data.seats)) return;
+        setNodes((prev) => {
+          const applied = applySeatsToNodes(prev, data.seats!, wallet);
+          queueMicrotask(() => {
+            if (cancelled) return;
+            setYoursId(applied.yoursId);
+            if (applied.yoursId) {
+              setSelectedId(applied.yoursId);
+              setEntered(true);
+            }
+          });
+          return applied.nodes;
+        });
+      } catch {
+        /* keep local map until API is up */
+      }
+    }
+    void syncSeats();
+    return () => {
+      cancelled = true;
+    };
+  }, [wallet]);
 
   const stats = useMemo<SystemStats>(() => {
     const yoursCount = yoursId ? 1 : 0;
@@ -248,7 +304,6 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       );
       setYoursId(id);
       setSelectedId(id);
-      window.localStorage.setItem(STORAGE_KEY, id);
       return true;
     },
     [nodes],
@@ -305,46 +360,66 @@ export function NexusProvider({ children }: { children: ReactNode }) {
     [nodes],
   );
 
-  const finishClaim = useCallback(
-    async (paid = false) => {
-      if (!claimingId) return false;
-      const id = claimingId;
-      if (!paid) {
-        setClaimingId(null);
-        return buyLot(id, false);
+  const finishClaim = useCallback(async () => {
+    if (!claimingId) return false;
+    const id = claimingId;
+    const treasury = treasuryAddress();
+    if (!treasury) {
+      setWalletError("Set NEXT_PUBLIC_CELLS_TREASURY to enable purchases.");
+      return false;
+    }
+
+    setWalletBusy(true);
+    setWalletError(null);
+    try {
+      const node = nodes.find((n) => n.id === id);
+      const index = node?.index ?? 0;
+      const ethAmount = priceAmountForIndex(index);
+      const result = await payForLot({
+        amount: ethAmount,
+        treasury,
+        chain: CHAIN_CONFIG,
+        expectedAddress: wallet,
+      });
+      window.localStorage.setItem(WALLET_KEY, result.address);
+      setWallet(result.address);
+
+      const claimRes = await fetch("/api/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          seatId: id,
+          wallet: result.address,
+          txHash: result.hash,
+          amountPaid: ethAmount,
+          nodeIndex: index,
+        }),
+      });
+      const claimData = (await claimRes.json()) as {
+        error?: string;
+        seat?: ServerSeat;
+      };
+      if (!claimRes.ok) {
+        throw new WalletError(
+          claimData.error || `Claim failed (${claimRes.status})`,
+        );
       }
 
-      setWalletBusy(true);
-      setWalletError(null);
-      try {
-        const node = nodes.find((n) => n.id === id);
-        const index = node?.index ?? 0;
-        const ethAmount = priceEthForIndex(index);
-        const result = await payForLot({
-          ethAmount,
-          treasury: treasuryAddress(),
-          chain: CHAIN_CONFIG,
-          expectedAddress: wallet,
-        });
-        window.localStorage.setItem(WALLET_KEY, result.address);
-        setWallet(result.address);
-        setClaimingId(null);
-        return buyLot(id, true, result.hash, ethAmount);
-      } catch (err) {
-        const msg =
-          err instanceof WalletError
+      setClaimingId(null);
+      return buyLot(id, true, result.hash, formatSeatPrice(index));
+    } catch (err) {
+      const msg =
+        err instanceof WalletError
+          ? err.message
+          : err instanceof Error
             ? err.message
-            : err instanceof Error
-              ? err.message
-              : "Payment failed.";
-        setWalletError(msg);
-        return false;
-      } finally {
-        setWalletBusy(false);
-      }
-    },
-    [buyLot, claimingId, nodes, wallet],
-  );
+            : "Payment failed.";
+      setWalletError(msg);
+      return false;
+    } finally {
+      setWalletBusy(false);
+    }
+  }, [buyLot, claimingId, nodes, wallet]);
 
   const cancelClaim = useCallback(() => {
     setClaimingId(null);
@@ -455,6 +530,7 @@ export function NexusProvider({ children }: { children: ReactNode }) {
             region: yours?.region ?? selected?.region,
             nodeLabel: yours?.label ?? selected?.label,
             mood: character.mood,
+            wallet: wallet ?? undefined,
             history: prior.map((m) => ({ role: m.role, text: m.text })),
           }),
         });
@@ -519,6 +595,7 @@ export function NexusProvider({ children }: { children: ReactNode }) {
       messages,
       selected?.label,
       selected?.region,
+      wallet,
       yours?.label,
       yours?.region,
       yoursId,

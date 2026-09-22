@@ -1,6 +1,12 @@
 /**
- * MetaMask / injected EIP-1193 wallet — Void-style connect → switch chain → pay.
+ * MetaMask / injected EIP-1193 wallet — connect → switch chain → pay ETH or ERC-20.
  */
+
+import {
+  PAY_TOKEN_DECIMALS,
+  isTokenPayment,
+  payTokenAddress,
+} from "./contracts";
 
 export type EthereumProvider = {
   request: (args: {
@@ -56,17 +62,34 @@ function toHexChainId(id: number) {
   return `0x${id.toString(16)}`;
 }
 
-function parseEtherToHex(ethAmount: string): string {
-  const cleaned = ethAmount.trim();
+/** Parse human decimal amount into base units for given decimals. */
+export function parseUnitsToHex(amount: string, decimals: number): string {
+  const cleaned = amount.trim();
   if (!/^\d+(\.\d+)?$/.test(cleaned)) {
-    throw new WalletError("Invalid ETH amount");
+    throw new WalletError("Invalid payment amount");
   }
   const [whole, frac = ""] = cleaned.split(".");
-  const fracPadded = (frac + "000000000000000000").slice(0, 18);
-  const wei =
-    BigInt(whole) * BigInt("1000000000000000000") + BigInt(fracPadded || "0");
-  if (wei <= BigInt(0)) throw new WalletError("Payment amount must be greater than 0");
-  return `0x${wei.toString(16)}`;
+  if (frac.length > decimals) {
+    throw new WalletError("Too many decimals in amount");
+  }
+  const fracPadded = (frac + "0".repeat(decimals)).slice(0, decimals);
+  const base =
+    BigInt(whole) * BigInt(10) ** BigInt(decimals) + BigInt(fracPadded || "0");
+  if (base <= BigInt(0)) throw new WalletError("Payment amount must be greater than 0");
+  return `0x${base.toString(16)}`;
+}
+
+function padAddress(addr: string): string {
+  return addr.replace(/^0x/i, "").toLowerCase().padStart(64, "0");
+}
+
+function padUint(hexAmount: string): string {
+  return hexAmount.replace(/^0x/i, "").padStart(64, "0");
+}
+
+/** ERC-20 transfer(to, amount) calldata */
+export function encodeErc20Transfer(to: string, amountHex: string): string {
+  return `0xa9059cbb${padAddress(to)}${padUint(amountHex)}`;
 }
 
 export async function connectInjected(): Promise<{
@@ -80,122 +103,81 @@ export async function connectInjected(): Promise<{
       "NO_PROVIDER",
     );
   }
-  let accounts: string[];
-  try {
-    accounts = (await provider.request({
-      method: "eth_requestAccounts",
-    })) as string[];
-  } catch (err) {
-    const e = err as { code?: number; message?: string };
-    if (e?.code === 4001) {
-      throw new WalletError("Connection rejected in wallet.", 4001);
-    }
-    throw new WalletError(e?.message || "Could not connect wallet.");
-  }
-  const raw = accounts?.[0];
-  if (!raw) throw new WalletError("No account returned from wallet.");
-  return { provider, address: raw };
+  const accounts = (await provider.request({
+    method: "eth_requestAccounts",
+  })) as string[];
+  if (!accounts[0]) throw new WalletError("No account returned.");
+  return { provider, address: accounts[0] };
 }
 
-export async function readAccounts(
-  provider: EthereumProvider,
-): Promise<string[]> {
+export async function readAccounts(provider: EthereumProvider) {
   try {
-    return (await provider.request({ method: "eth_accounts" })) as string[];
+    const accounts = (await provider.request({
+      method: "eth_accounts",
+    })) as string[];
+    return accounts ?? [];
   } catch {
     return [];
   }
 }
 
-export async function readChainId(provider: EthereumProvider): Promise<string> {
-  try {
-    return String(
-      (await provider.request({ method: "eth_chainId" })) || "",
-    ).toLowerCase();
-  } catch {
-    return "";
-  }
-}
-
 export async function ensureChain(
   provider: EthereumProvider,
-  opts: {
+  chain: {
     chainId: number;
     chainName: string;
     rpcUrl: string;
     explorerUrl: string;
-    currency?: { name: string; symbol: string; decimals: number };
   },
 ) {
-  const hexId = toHexChainId(opts.chainId).toLowerCase();
-  const current = await readChainId(provider);
-  if (current === hexId) return;
+  const want = toHexChainId(chain.chainId);
+  const current = (await provider.request({ method: "eth_chainId" })) as string;
+  if (current?.toLowerCase() === want.toLowerCase()) return;
 
   try {
     await provider.request({
       method: "wallet_switchEthereumChain",
-      params: [{ chainId: hexId }],
+      params: [{ chainId: want }],
     });
   } catch (err) {
-    const e = err as { code?: number; message?: string };
-    const msg = String(e?.message || err || "");
-    if (/already pending/i.test(msg)) {
-      throw new WalletError(
-        "Wallet has a pending network request. Open MetaMask → Reject, then retry.",
-      );
-    }
-    if (e?.code === 4902 || /Unrecognized chain/i.test(msg)) {
-      try {
-        await provider.request({
-          method: "wallet_addEthereumChain",
-          params: [
-            {
-              chainId: hexId,
-              chainName: opts.chainName,
-              nativeCurrency: opts.currency ?? {
-                name: "Ether",
-                symbol: "ETH",
-                decimals: 18,
-              },
-              rpcUrls: [opts.rpcUrl],
-              blockExplorerUrls: [opts.explorerUrl],
+    const e = err as { code?: number };
+    if (e?.code === 4902) {
+      await provider.request({
+        method: "wallet_addEthereumChain",
+        params: [
+          {
+            chainId: want,
+            chainName: chain.chainName,
+            nativeCurrency: {
+              name: "Ether",
+              symbol: "ETH",
+              decimals: 18,
             },
-          ],
-        });
-      } catch (addErr) {
-        const addMsg = String(
-          (addErr as { message?: string })?.message || addErr || "",
-        );
-        if (/already pending/i.test(addMsg)) {
-          throw new WalletError(
-            "Pending Add Network in MetaMask. Reject it, then retry.",
-          );
-        }
-        throw new WalletError(
-          `Add ${opts.chainName} (id ${opts.chainId}) in MetaMask, switch to it, then retry.`,
-        );
-      }
+            rpcUrls: [chain.rpcUrl],
+            blockExplorerUrls: [chain.explorerUrl],
+          },
+        ],
+      });
       return;
     }
     if (e?.code === 4001) {
       throw new WalletError("Network switch rejected in wallet.", 4001);
     }
-    throw new WalletError(msg || "Could not switch network.");
+    throw new WalletError("Could not switch network.");
   }
 }
 
-export async function waitForReceipt(
+async function waitForReceipt(
   provider: EthereumProvider,
   hash: string,
-  { timeoutMs = 120_000 } = {},
+  attempts = 40,
 ): Promise<{ status: "success" | "reverted"; blockNumber?: string }> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
+  for (let i = 0; i < attempts; i += 1) {
     const receipt = (await provider.request({
       method: "eth_getTransactionReceipt",
       params: [hash],
     })) as { status?: string; blockNumber?: string } | null;
-    if (receipt) {
+    if (receipt?.status) {
       const ok = receipt.status === "0x1" || receipt.status === "1";
       return {
         status: ok ? "success" : "reverted",
@@ -208,10 +190,11 @@ export async function waitForReceipt(
 }
 
 /**
- * Pay for a lot: send native ETH to treasury (or self if treasury unset — demo settlement).
+ * Pay for a lot: ERC-20 transfer when PAY_TOKEN is set, else native ETH to treasury.
  */
 export async function payForLot(opts: {
-  ethAmount: string;
+  /** Human amount (ETH or token units). */
+  amount: string;
   treasury: string | null;
   chain: {
     chainId: number;
@@ -220,7 +203,13 @@ export async function payForLot(opts: {
     explorerUrl: string;
   };
   expectedAddress?: string | null;
-}): Promise<{ hash: string; address: string; to: string }> {
+}): Promise<{
+  hash: string;
+  address: string;
+  to: string;
+  asset: "eth" | "erc20";
+  token?: string;
+}> {
   const { provider, address } = await connectInjected();
   if (
     opts.expectedAddress &&
@@ -231,26 +220,47 @@ export async function payForLot(opts: {
     );
   }
 
+  if (!opts.treasury || !/^0x[a-fA-F0-9]{40}$/.test(opts.treasury)) {
+    throw new WalletError(
+      "Treasury not configured. Set NEXT_PUBLIC_CELLS_TREASURY.",
+      "NO_TREASURY",
+    );
+  }
+
   await ensureChain(provider, opts.chain);
 
-  const to =
-    opts.treasury && /^0x[a-fA-F0-9]{40}$/.test(opts.treasury)
-      ? opts.treasury
-      : address;
-  const value = parseEtherToHex(opts.ethAmount);
+  const token = payTokenAddress();
+  const useToken = isTokenPayment() && Boolean(token);
 
   let hash: string;
   try {
-    hash = (await provider.request({
-      method: "eth_sendTransaction",
-      params: [
-        {
-          from: address,
-          to,
-          value,
-        },
-      ],
-    })) as string;
+    if (useToken && token) {
+      const amountHex = parseUnitsToHex(opts.amount, PAY_TOKEN_DECIMALS);
+      const data = encodeErc20Transfer(opts.treasury, amountHex);
+      hash = (await provider.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: address,
+            to: token,
+            data,
+            value: "0x0",
+          },
+        ],
+      })) as string;
+    } else {
+      const value = parseUnitsToHex(opts.amount, 18);
+      hash = (await provider.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: address,
+            to: opts.treasury,
+            value,
+          },
+        ],
+      })) as string;
+    }
   } catch (err) {
     const e = err as { code?: number; message?: string };
     if (e?.code === 4001) {
@@ -266,7 +276,13 @@ export async function payForLot(opts: {
     throw new WalletError("Transaction reverted on-chain.");
   }
 
-  return { hash, address, to };
+  return {
+    hash,
+    address,
+    to: useToken && token ? token : opts.treasury,
+    asset: useToken ? "erc20" : "eth",
+    token: useToken && token ? token : undefined,
+  };
 }
 
 export function explorerTxUrl(explorerBase: string, hash: string) {

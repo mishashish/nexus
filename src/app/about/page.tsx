@@ -48,8 +48,8 @@ export default function AboutPage() {
             ))}
           </ul>
           <div className="notebox mt-8">
-            Stage 1 is a visual prototype: honeycomb structure, local claim, mock
-            replies, demo wallet. No live chain. No laboratory claims.
+            Paid seats via MetaMask, server ownership, live Gemini chat when
+            GEMINI_API_KEY is set. No laboratory claims. Seats are not investments.
           </div>
           <p className="mt-6 text-sm">
             <Link href="/docs" className="text-nexus-violet">

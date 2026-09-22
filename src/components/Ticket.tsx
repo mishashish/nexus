@@ -23,10 +23,10 @@ export function Ticket() {
         <p className="ticket-line">{myth.line}</p>
         <p className="ticket-price">
           {receipt.price} NX
-          {receipt.ethPaid ? ` · ${receipt.ethPaid} ETH` : ""}
+          {receipt.ethPaid ? ` · ${receipt.ethPaid}` : ""}
           {receipt.tx
             ? ` · ${shortAddress(receipt.tx)}`
-            : " · local only"}
+            : ""}
         </p>
         {receipt.explorerUrl ? (
           <p className="ticket-line">

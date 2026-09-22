@@ -5,6 +5,7 @@ import {
   type ChatContext,
 } from "@/lib/cells-prompt";
 import { mockReply } from "@/lib/data";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,7 @@ type Body = {
   region?: string;
   nodeLabel?: string;
   mood?: string;
+  wallet?: string;
   history?: Array<{ role: "user" | "nexus"; text: string }>;
 };
 
@@ -77,6 +79,23 @@ export async function POST(request: Request) {
   const message = body.message?.trim() ?? "";
   if (!message || message.length > 500) {
     return NextResponse.json({ error: "Message required (max 500)" }, { status: 400 });
+  }
+
+  const ip = clientIp(request);
+  const walletKey = body.wallet?.trim().toLowerCase() || "anon";
+  const limited = rateLimit({
+    key: `chat:${ip}:${walletKey}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many messages. Slow down.", retryAfterSec: limited.retryAfterSec },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSec) },
+      },
+    );
   }
 
   const ctx: ChatContext = {

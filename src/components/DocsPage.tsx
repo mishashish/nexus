@@ -119,16 +119,17 @@ export function DocsPage() {
               <div>
                 <dt>Lot</dt>
                 <dd>
-                  A numbered seat on the honeycomb, with a costume price in NX.
-                  Buying it in this prototype stores the seat in your browser. It
-                  is not a token purchase.
+                  A numbered seat on the honeycomb. Purchase settles in ETH (or
+                  your project ERC-20 when NEXT_PUBLIC_PAY_TOKEN is set) via
+                  MetaMask to the CELLS treasury; ownership is recorded on the
+                  server after the transaction is verified.
                 </dd>
               </div>
               <div>
                 <dt>NX</dt>
                 <dd>
-                  A label next to the price, like a paper ticket. There is no live
-                  coin, no wallet, and nothing to invest.
+                  A display label next to the price. Settlement is ETH or the
+                  project token — seats are not equity and not an investment.
                 </dd>
               </div>
               <div>
@@ -141,8 +142,9 @@ export function DocsPage() {
               <div>
                 <dt>Claim</dt>
                 <dd>
-                  Taking a free lot. In this prototype it is stored in your
-                  browser. NX is a costume price, not a payment.
+                  Paying for an open seat. MetaMask sends ETH or the project
+                  token to treasury; the server verifies the tx and locks the
+                  seat to your wallet.
                 </dd>
               </div>
               <div>
@@ -171,9 +173,9 @@ export function DocsPage() {
               <div>
                 <dt>Writer</dt>
                 <dd>
-                  Who actually composed the sentence. In this build it is a local
-                  mock writer. Later it may be a language model. The site should
-                  always say which one ran.
+                  Who composed the sentence. Live replies use Gemini when
+                  GEMINI_API_KEY is set; otherwise a local mock with
+                  source:&quot;mock&quot;. The API always reports which ran.
                 </dd>
               </div>
             </dl>
@@ -182,8 +184,8 @@ export function DocsPage() {
           <article className="doc-section" id="participate">
             <h2>How to try it</h2>
             <p>
-              Open the site, pick a free cell, claim it, and send a scenario.
-              Everyone sees the same archive.
+              Connect MetaMask, buy an open seat with ETH, then send a scenario
+              from your cabinet. Owned seats sync from the server.
             </p>
             <ol className="steps-doc">
               <li>
@@ -201,10 +203,10 @@ export function DocsPage() {
               <li>
                 <span className="n">2</span>
                 <div>
-                  <h3>Claim it</h3>
+                  <h3>Buy it</h3>
                   <p>
-                    Press claim in the node panel. In this prototype the seat stays
-                    in local storage on this device.
+                    Connect MetaMask and pay ETH to the treasury. The server
+                    verifies the transaction and locks the seat to your wallet.
                   </p>
                 </div>
               </li>
@@ -237,8 +239,9 @@ export function DocsPage() {
               <details>
                 <summary>Is there a token?</summary>
                 <p>
-                  No. Claiming is first-come in this browser. There is no live
-                  contract and nothing here is an investment.
+                  No. Open seats are sold first-come via MetaMask. Payment goes
+                  to the treasury; the server verifies the transaction. This is
+                  not an investment product.
                 </p>
               </details>
               <details>
@@ -252,8 +255,8 @@ export function DocsPage() {
               <details>
                 <summary>Who actually writes the replies?</summary>
                 <p>
-                  Software. Right now a local mock writer. Later, if a key is
-                  configured, a language model. Neurons do not write the sentences.
+                  Software. With GEMINI_API_KEY configured, a language model
+                  answers in the CELLS voice. Neurons do not write the sentences.
                 </p>
               </details>
               <details>
@@ -266,7 +269,10 @@ export function DocsPage() {
               </details>
               <details>
                 <summary>Can one person own more than one node?</summary>
-                <p>The design is one node per identity. This prototype stores one seat per browser.</p>
+                <p>
+                  One seat per purchase. The same wallet can hold multiple seats
+                  if it pays for each open lot separately.
+                </p>
               </details>
               <details>
                 <summary>Is this an investment?</summary>
@@ -281,9 +287,9 @@ export function DocsPage() {
           <article className="doc-section" id="status">
             <h2>Status &amp; roadmap</h2>
             <div className="notebox">
-              <b>Stage 1 prototype, honest stack.</b> The honeycomb, the archive UI
-              and local claim are here. Replies are mock. There is no token, no
-              wallet, and no lab connection.
+              <b>Live product stack.</b> MetaMask purchase on the configured Base
+              network, server-verified seat ownership, Gemini lore chat. Seats are
+              digital seats — not tissue, not equity.
             </div>
             <dl className="glossary">
               <div>
@@ -291,8 +297,11 @@ export function DocsPage() {
                 <dd>Drag the 3D honeycomb. Click a cell. Read the public memory.</dd>
               </div>
               <div>
-                <dt>Claim</dt>
-                <dd>Take one free node. It stays in this browser until you clear storage.</dd>
+                <dt>Buy</dt>
+                <dd>
+                  Connect MetaMask, pay ETH to treasury, server locks the seat to
+                  your wallet.
+                </dd>
               </div>
               <div>
                 <dt>Shared replies</dt>

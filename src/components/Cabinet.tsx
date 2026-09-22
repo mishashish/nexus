@@ -297,7 +297,7 @@ export function Cabinet() {
                         <dd>
                           {treasuryAddress()
                             ? shortAddress(treasuryAddress()!)
-                            : "demo / self"}
+                            : "not configured"}
                         </dd>
                       </div>
                     </dl>

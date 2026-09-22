@@ -4,8 +4,11 @@ import { useEffect } from "react";
 import { REGION_MYTH } from "@/lib/chamber";
 import {
   CHAIN_LABEL,
+  formatSeatPrice,
   isLiveSettlement,
-  priceEthForIndex,
+  isTokenPayment,
+  paymentAssetLabel,
+  settlementBlockedReason,
   treasuryAddress,
 } from "@/lib/contracts";
 import { lotPrice, lotTag } from "@/lib/lots";
@@ -40,9 +43,11 @@ export function ClaimLock() {
   if (!node) return null;
   const index = node.index ?? 0;
   const myth = REGION_MYTH[node.region ?? ""] ?? REGION_MYTH.frontal;
-  const eth = priceEthForIndex(index);
+  const asset = paymentAssetLabel();
   const treasury = treasuryAddress();
   const live = isLiveSettlement();
+  const blocked = settlementBlockedReason();
+  const priceLabel = formatSeatPrice(index);
 
   return (
     <div className="claim-scrim" role="dialog" aria-labelledby="claim-title">
@@ -57,16 +62,24 @@ export function ClaimLock() {
           {myth.line}
         </p>
         <p className="claim-hint">
-          {lotPrice(index)} NX · {eth} ETH · {CHAIN_LABEL}
+          {lotPrice(index)} NX · {priceLabel} · {CHAIN_LABEL}
           <br />
           {live ? (
             <>
-              Pay to <code>{shortAddress(treasury!)}</code>
+              Pay {asset}
+              {isTokenPayment() ? " token" : ""} to{" "}
+              <code>{shortAddress(treasury!)}</code>
             </>
           ) : (
-            <>Demo settlement via MetaMask (self-pay until treasury is set)</>
+            <>Purchases disabled until treasury is configured.</>
           )}
         </p>
+
+        {blocked ? (
+          <p className="claim-error" role="alert">
+            {blocked}
+          </p>
+        ) : null}
 
         {walletError ? (
           <p className="claim-error" role="alert">
@@ -82,7 +95,7 @@ export function ClaimLock() {
             <button
               type="button"
               className="btn-primary"
-              disabled={walletBusy}
+              disabled={walletBusy || !live}
               onClick={() => {
                 if (!hasWalletExt) {
                   window.open("https://metamask.io/download/", "_blank");
@@ -101,17 +114,6 @@ export function ClaimLock() {
               type="button"
               className="btn-ghost"
               disabled={walletBusy}
-              onClick={() => {
-                playLock();
-                void finishClaim(false);
-              }}
-            >
-              Keep local only
-            </button>
-            <button
-              type="button"
-              className="btn-ghost"
-              disabled={walletBusy}
               onClick={cancelClaim}
             >
               Cancel
@@ -122,24 +124,13 @@ export function ClaimLock() {
             <button
               type="button"
               className="btn-primary"
-              disabled={walletBusy}
+              disabled={walletBusy || !live}
               onClick={() => {
                 playLock();
-                void finishClaim(true);
+                void finishClaim();
               }}
             >
-              {walletBusy ? "Confirm in wallet…" : `Pay ${eth} ETH`}
-            </button>
-            <button
-              type="button"
-              className="btn-ghost"
-              disabled={walletBusy}
-              onClick={() => {
-                playLock();
-                void finishClaim(false);
-              }}
-            >
-              Local claim
+              {walletBusy ? "Confirm in wallet…" : `Pay ${priceLabel}`}
             </button>
             <button
               type="button"

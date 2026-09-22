@@ -1,13 +1,15 @@
-# NEXUS
+# CELLS (NEXUS)
 
 **One mind. 128 cells.** A shared digital character. Honeycomb cortex. Public memory.
 
-This is Stage 1: the site, the 3D honeycomb brain, local claim, mock replies. No database, wallet, or live model yet.
+Live stack: MetaMask purchase (Base Sepolia or Base mainnet via env), server-verified seat ownership, Gemini lore chat.
 
 ## Run locally
 
 ```bash
 npm install
+cp .env.example .env.local
+# set GEMINI_API_KEY and NEXT_PUBLIC_CELLS_TREASURY
 npm run dev
 ```
 
@@ -17,26 +19,20 @@ Open http://localhost:3000
 - `/memory` — public traces
 - `/docs` — what it is, glossary, how to try it, FAQ
 - `/about` — short constitution
+- `/me` — cabinet for your wallet-owned seat
 
 ## Product loop
 
 1. **Watch** — drag the honeycomb. No account needed.
-2. **Claim** — pick a free cell. Stored in this browser for now.
-3. **Send** — a short public scenario. The reply stays in the archive.
+2. **Buy** — MetaMask pays ETH to treasury; server verifies tx and records the seat.
+3. **Send** — a short public scenario. Gemini replies when `GEMINI_API_KEY` is set.
+
+## Env
+
+See `.env.example` for Sepolia staging vs Base mainnet presets, treasury, Gemini, and Vercel KV (`KV_REST_API_*`). Without KV, local/dev uses `.data/seats.json`.
 
 ## Lore
 
-`CONSTITUTION.md` is the character. `LORE.md` is the short public version. `DISCLAIMER.md` is the honesty text. Scenarios colour the next thought. They do not erase the rest, and they do not override the constitution.
+`CONSTITUTION.md` is the character. `LORE.md` is the short public version. `DISCLAIMER.md` is the honesty text.
 
-## Layout
-
-```
-CONSTITUTION.md   character bible
-LORE.md           public myth
-DISCLAIMER.md     honesty text
-src/app/docs      plain-language documentation
-src/components    site UI
-src/lib/brain-hex honeycomb geometry
-```
-
-NEXUS is collaborative fiction. It does not think, feel, or contain real neurons.
+CELLS is collaborative fiction. It does not think, feel, or contain real neurons. Seats are not investments.
