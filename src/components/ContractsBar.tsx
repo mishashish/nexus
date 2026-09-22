@@ -44,13 +44,13 @@ export function ContractsBar() {
           <p className="kicker">contracts</p>
           <h2 className="contracts-title">Buy a cell</h2>
           <p className="contracts-sub">
-            MetaMask on {CHAIN_LABEL}. Each lot is one paid seat in the brain
-            structure. Pay in {paymentAssetLabel()}
+            Browser wallet on {CHAIN_LABEL} (MetaMask, Rabby, Coinbase, OKX…).
+            Each lot is one paid seat. Pay in {paymentAssetLabel()}
             {isTokenPayment()
-              ? " (project token)."
+              ? "."
               : isLiveSettlement()
-                ? " — live ETH until PAY_TOKEN is set."
-                : " — set NEXT_PUBLIC_CELLS_TREASURY to enable purchases."}
+                ? " — ETH until the project token is set."
+                : ". Purchases unlock when treasury is configured."}
           </p>
         </div>
         <div className="contracts-wallet">
@@ -82,8 +82,8 @@ export function ContractsBar() {
               {walletBusy
                 ? "Connecting…"
                 : hasWalletExt
-                  ? "Connect MetaMask"
-                  : "Install MetaMask"}
+                  ? "Connect wallet"
+                  : "Install a wallet"}
             </button>
           )}
         </div>
@@ -104,7 +104,7 @@ export function ContractsBar() {
             Treasury <code>{shortAddress(treasury)}</code>
           </>
         ) : (
-          <>Purchases locked · set NEXT_PUBLIC_CELLS_TREASURY</>
+          <>Purchases locked until treasury is set · wallet connect still works</>
         )}
       </p>
 

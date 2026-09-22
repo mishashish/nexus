@@ -1,5 +1,6 @@
 /**
- * MetaMask / injected EIP-1193 wallet — connect → switch chain → pay ETH or ERC-20.
+ * Injected EIP-1193 wallets (MetaMask, Rabby, Coinbase, Brave, OKX, …).
+ * Connect does not need a project token or treasury — only paying for a seat does.
  */
 
 import {
@@ -19,12 +20,18 @@ export type EthereumProvider = {
     handler: (...args: unknown[]) => void,
   ) => void;
   isMetaMask?: boolean;
+  isCoinbaseWallet?: boolean;
+  isRabby?: boolean;
+  isBraveWallet?: boolean;
+  isOkxWallet?: boolean;
   providers?: EthereumProvider[];
 };
 
 declare global {
   interface Window {
     ethereum?: EthereumProvider;
+    okxwallet?: { ethereum?: EthereumProvider };
+    coinbaseWalletExtension?: EthereumProvider;
   }
 }
 
@@ -42,16 +49,31 @@ export function shortAddress(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
+function pickPreferred(providers: EthereumProvider[]): EthereumProvider | null {
+  if (!providers.length) return null;
+  return (
+    providers.find((p) => p.isMetaMask && !p.isBraveWallet) ??
+    providers.find((p) => p.isRabby) ??
+    providers.find((p) => p.isCoinbaseWallet) ??
+    providers.find((p) => p.isOkxWallet) ??
+    providers.find((p) => p.isBraveWallet) ??
+    providers[0] ??
+    null
+  );
+}
+
 export function getInjectedProvider(): EthereumProvider | null {
   if (typeof window === "undefined") return null;
   const eth = window.ethereum;
-  if (!eth) return null;
-  if (Array.isArray(eth.providers) && eth.providers.length) {
-    return (
-      eth.providers.find((p) => p.isMetaMask) ?? eth.providers[0] ?? null
-    );
+  const extras: EthereumProvider[] = [];
+  if (window.okxwallet?.ethereum) extras.push(window.okxwallet.ethereum);
+  if (window.coinbaseWalletExtension) extras.push(window.coinbaseWalletExtension);
+
+  if (eth && Array.isArray(eth.providers) && eth.providers.length) {
+    return pickPreferred([...eth.providers, ...extras]);
   }
-  return eth;
+  if (eth?.request) return eth;
+  return pickPreferred(extras);
 }
 
 export function hasInjectedWallet() {
@@ -99,15 +121,26 @@ export async function connectInjected(): Promise<{
   const provider = getInjectedProvider();
   if (!provider?.request) {
     throw new WalletError(
-      "MetaMask not found. Install the extension, then refresh.",
+      "No browser wallet found. Install MetaMask, Rabby, Coinbase, or OKX, then refresh.",
       "NO_PROVIDER",
     );
   }
-  const accounts = (await provider.request({
-    method: "eth_requestAccounts",
-  })) as string[];
-  if (!accounts[0]) throw new WalletError("No account returned.");
-  return { provider, address: accounts[0] };
+  try {
+    const accounts = (await provider.request({
+      method: "eth_requestAccounts",
+    })) as string[];
+    if (!accounts[0]) throw new WalletError("No account returned from wallet.");
+    return { provider, address: accounts[0] };
+  } catch (err) {
+    if (err instanceof WalletError) throw err;
+    const e = err as { code?: number; message?: string };
+    if (e?.code === 4001) {
+      throw new WalletError("Connection rejected in wallet.", 4001);
+    }
+    throw new WalletError(
+      e?.message || "Wallet did not respond. Unlock it and try again.",
+    );
+  }
 }
 
 export async function readAccounts(provider: EthereumProvider) {

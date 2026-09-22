@@ -432,9 +432,18 @@ export function NexusProvider({ children }: { children: ReactNode }) {
     try {
       setHasWalletExt(hasInjectedWallet());
       const { provider, address } = await connectInjected();
-      await ensureChain(provider, CHAIN_CONFIG);
+      // Account connect is independent of treasury / project token.
       window.localStorage.setItem(WALLET_KEY, address);
       setWallet(address);
+      try {
+        await ensureChain(provider, CHAIN_CONFIG);
+      } catch (chainErr) {
+        const msg =
+          chainErr instanceof WalletError
+            ? chainErr.message
+            : `Connected, but switch to ${CHAIN_CONFIG.chainName} to buy seats.`;
+        setWalletError(msg);
+      }
       return true;
     } catch (err) {
       const msg =

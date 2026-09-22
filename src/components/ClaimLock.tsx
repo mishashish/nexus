@@ -107,8 +107,8 @@ export function ClaimLock() {
               {walletBusy
                 ? "Connecting…"
                 : hasWalletExt
-                  ? "Connect MetaMask"
-                  : "Install MetaMask"}
+                  ? "Connect wallet"
+                  : "Install a wallet"}
             </button>
             <button
               type="button"
@@ -146,13 +146,13 @@ export function ClaimLock() {
           <p className="claim-hint">Wallet {shortAddress(wallet)}</p>
         ) : !hasWalletExt ? (
           <p className="claim-hint">
-            Need MetaMask?{" "}
+            Need a wallet? MetaMask, Rabby, Coinbase, or OKX work in the browser.{" "}
             <a
               href="https://metamask.io/download/"
               target="_blank"
               rel="noreferrer"
             >
-              Download
+              Get MetaMask
             </a>
           </p>
         ) : null}

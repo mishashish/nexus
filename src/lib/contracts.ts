@@ -57,7 +57,7 @@ export function isLiveSettlement() {
 
 export function settlementBlockedReason(): string | null {
   if (treasuryAddress()) return null;
-  return "Set NEXT_PUBLIC_CELLS_TREASURY to enable purchases.";
+  return "Purchases unlock when treasury is configured. You can still connect a wallet.";
 }
 
 export type FeaturedContract = {

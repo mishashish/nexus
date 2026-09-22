@@ -159,8 +159,8 @@ export function Cabinet() {
                     {walletBusy
                       ? "Connecting…"
                       : hasWalletExt
-                        ? "Connect MetaMask"
-                        : "Install MetaMask"}
+                        ? "Connect wallet"
+                        : "Install a wallet"}
                   </button>
                 )}
                 <Link href="/#contracts" className="btn-ghost">
