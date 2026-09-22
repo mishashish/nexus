@@ -12,6 +12,7 @@ import {
 import { playTap } from "@/lib/linen-sound";
 import { useNexus } from "@/lib/nexus-store";
 import { CopyableAddress } from "@/components/CopyableAddress";
+import { shortAddress } from "@/lib/wallet";
 
 export function ContractsBar() {
   const {
