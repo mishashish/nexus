@@ -2072,6 +2072,28 @@ html.linen .cell-viewer-hint {
   color: var(--color-nexus-mute);
 }
 
+.wallet-addr-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: inherit;
+  transition: color 0.15s ease;
+}
+
+.wallet-addr-btn:hover {
+  color: var(--color-nexus-violet);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.wallet-addr-btn:focus-visible {
+  outline: 1px solid var(--color-nexus-violet);
+  outline-offset: 3px;
+}
+
 .contract-meta {
   margin: 14px 0 0;
   font-family: var(--font-plex), ui-monospace, monospace;

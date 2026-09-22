@@ -11,7 +11,7 @@ import {
 } from "@/lib/contracts";
 import { playTap } from "@/lib/linen-sound";
 import { useNexus } from "@/lib/nexus-store";
-import { shortAddress } from "@/lib/wallet";
+import { CopyableAddress } from "@/components/CopyableAddress";
 
 export function ContractsBar() {
   const {
@@ -55,9 +55,7 @@ export function ContractsBar() {
         <div className="contracts-wallet">
           {wallet ? (
             <>
-              <span className="wallet-addr" title={wallet}>
-                {shortAddress(wallet)}
-              </span>
+              <CopyableAddress address={wallet} />
               <button
                 type="button"
                 className="btn-ghost"

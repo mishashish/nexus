@@ -11,6 +11,7 @@ import { playTap } from "@/lib/linen-sound";
 import { lotPrice, lotTag } from "@/lib/lots";
 import { useNexus } from "@/lib/nexus-store";
 import { shortAddress } from "@/lib/wallet";
+import { CopyableAddress } from "@/components/CopyableAddress";
 
 const REGIONS = [
   "all",
@@ -131,15 +132,17 @@ export function Cabinet() {
             ) : (
               <>
                 {wallet ? (
-                  <button
-                    type="button"
-                    className="btn-ghost"
-                    title={wallet}
-                    disabled={walletBusy}
-                    onClick={disconnectWallet}
-                  >
-                    {shortAddress(wallet)}
-                  </button>
+                  <>
+                    <CopyableAddress address={wallet} className="btn-ghost wallet-addr" />
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      disabled={walletBusy}
+                      onClick={disconnectWallet}
+                    >
+                      Disconnect
+                    </button>
+                  </>
                 ) : (
                   <button
                     type="button"
